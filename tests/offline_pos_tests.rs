@@ -153,4 +153,142 @@ mod tests {
         }
         assert_eq!(db.get_pending_sync_count(), 0);
     }
+
+    #[test]
+    fn test_product_crud_and_categories() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        use qordy_pos_rs::models::CreateProductRequest;
+
+        // 1. Yeni ürün ekle
+        let req = CreateProductRequest {
+            barcode: "8690001112223".to_string(),
+            name: "Organik Bal 500g".to_string(),
+            category: "Kahvaltılık".to_string(),
+            price: 185.0,
+            vat_rate: 1.0,
+            stock_qty: 25.0,
+            unit: "adet".to_string(),
+            is_weighed: false,
+            quick_order: Some(99),
+        };
+
+        let created = db.create_product(req).expect("Ürün oluşturulmalı");
+        assert_eq!(created.name, "Organik Bal 500g");
+
+        // 2. Barkod ile bul
+        let found = db.find_product_by_barcode("8690001112223").expect("Bulunmalı");
+        assert_eq!(found.price, 185.0);
+
+        // 3. Fiyat güncelle
+        let update_req = CreateProductRequest {
+            barcode: "8690001112223".to_string(),
+            name: "Organik Bal 500g (İndirimli)".to_string(),
+            category: "Kahvaltılık".to_string(),
+            price: 165.0,
+            vat_rate: 1.0,
+            stock_qty: 30.0,
+            unit: "adet".to_string(),
+            is_weighed: false,
+            quick_order: Some(99),
+        };
+        let updated = db.update_product(&created.id, update_req).expect("Güncellenmeli");
+        assert_eq!(updated.price, 165.0);
+        assert_eq!(updated.name, "Organik Bal 500g (İndirimli)");
+
+        // 4. Sil
+        db.delete_product(&created.id).expect("Silinmeli");
+        assert!(db.find_product_by_barcode("8690001112223").is_none());
+    }
+
+    #[test]
+    fn test_cart_parking_and_recall() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        let items = vec![CartItem {
+            product_id: "PRD-001".to_string(),
+            barcode: "8690504018087".to_string(),
+            name: "Somun Ekmek".to_string(),
+            unit_price: 10.0,
+            quantity: 3.0,
+            unit: "adet".to_string(),
+            vat_rate: 1.0,
+            discount: 0.0,
+            total: 30.0,
+            is_weighed: false,
+            notes: None,
+        }];
+
+        // Sepeti beklet
+        let parked = db.park_cart("Masa 4 - Bekleyen", items).expect("Sepet park edilmeli");
+        assert_eq!(parked.grand_total, 30.0);
+        assert_eq!(parked.item_count, 1);
+
+        // Listele
+        let parked_list = db.get_parked_carts();
+        assert_eq!(parked_list.len(), 1);
+        assert_eq!(parked_list[0].note, "Masa 4 - Bekleyen");
+
+        // Sil / Çağır
+        db.delete_parked_cart(&parked.id).expect("Silinmeli");
+        assert_eq!(db.get_parked_carts().len(), 0);
+    }
+
+    #[test]
+    fn test_stock_count_session_and_commit() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        // Başlangıç ekmek stoğu: 150 adet
+        let initial_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(initial_bread.stock_qty, 150.0);
+
+        // Sayım oturumu başlat
+        let session = db.start_stock_count("Akşam Kapanış Sayımı", "FULL", None).expect("Sayım başlamalı");
+        assert_eq!(session.status, "OPEN");
+
+        // Sayımda rafta 142 ekmek sayıldı (8 adet eksik / satılmış / fire)
+        let count_item = db.add_stock_count_item(&session.id, "8690504018087", 142.0).expect("Kalem eklenmeli");
+        assert_eq!(count_item.system_qty, 150.0);
+        assert_eq!(count_item.counted_qty, 142.0);
+        assert_eq!(count_item.variance_qty, -8.0);
+
+        // Sayımı onayla ve stokları güncelle
+        db.commit_stock_count(&session.id).expect("Sayım onaylanmalı");
+
+        // Ekmek stoğu artık 142 olmalı
+        let updated_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(updated_bread.stock_qty, 142.0);
+    }
+
+    #[test]
+    fn test_customer_facing_display_cfd_state() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        use qordy_pos_rs::models::CfdState;
+
+        let initial_cfd = db.get_cfd_state();
+        assert_eq!(initial_cfd.state, "IDLE");
+
+        let new_state = CfdState {
+            state: "ACTIVE_SALE".to_string(),
+            items: Vec::new(),
+            subtotal: 120.0,
+            discount: 0.0,
+            grand_total: 120.0,
+            tender: 0.0,
+            change: 0.0,
+            payment_method: None,
+            customer_name: Some("Ahmet Bey".to_string()),
+            updated_at: "2026-10-20T00:30:00Z".to_string(),
+        };
+
+        db.update_cfd_state(&new_state).expect("CFD güncellenmeli");
+        let retrieved = db.get_cfd_state();
+        assert_eq!(retrieved.state, "ACTIVE_SALE");
+        assert_eq!(retrieved.grand_total, 120.0);
+    }
 }

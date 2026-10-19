@@ -1,27 +1,35 @@
 use crate::barcode::BarcodeParser;
 use crate::escpos::ReceiptPrinter;
 use crate::models::{
-    CartItem, CheckoutRequest, CheckoutResponse, Customer, PosStatus, Product, ZReport,
+    CartItem, CfdState, CheckoutRequest, CheckoutResponse, CreateCustomerRequest,
+    CreateProductRequest, Customer, LedgerEntry, ParkedCart, PosStatus, Product, StockCountItem,
+    StockCountSession, ZReport,
 };
 use crate::storage::DatabaseManager;
 use crate::sync::SyncEngine;
 use crate::ui;
 use axum::{
-    extract::{Query, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Path, Query, State,
+    },
     http::StatusCode,
     response::Html,
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Json, Router,
 };
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info};
 
 pub struct AppState {
     pub db: Arc<DatabaseManager>,
     pub sync: Arc<SyncEngine>,
+    pub ws_tx: broadcast::Sender<String>,
 }
 
 #[derive(Deserialize)]
@@ -57,6 +65,26 @@ pub struct CustomerPaymentRequest {
 #[derive(Deserialize)]
 pub struct SearchQuery {
     pub q: Option<String>,
+    pub category: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ParkCartRequest {
+    pub note: String,
+    pub items: Vec<CartItem>,
+}
+
+#[derive(Deserialize)]
+pub struct StartCountRequest {
+    pub title: String,
+    pub count_type: String,
+    pub notes: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct ScanCountItemRequest {
+    pub barcode: String,
+    pub qty: f64,
 }
 
 pub fn create_router(state: Arc<AppState>) -> Router {
@@ -66,24 +94,113 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .allow_headers(Any);
 
     Router::new()
+        // HTML Sayfaları (Apple Design UI)
         .route("/", get(handle_index))
+        .route("/customer", get(handle_customer_display))
+        // WebSocket Gerçek Zamanlı Eşitleme
+        .route("/ws/pos", get(handle_ws_pos))
+        // POS & Sistem Durumu
         .route("/api/status", get(handle_status))
         .route("/api/products/quick", get(handle_quick_products))
         .route("/api/products/search", get(handle_search_products))
         .route("/api/barcode/scan", post(handle_barcode_scan))
         .route("/api/checkout", post(handle_checkout))
-        .route("/api/customers", get(handle_customers))
-        .route("/api/customers/payment", post(handle_customer_payment))
         .route("/api/reports/z", get(handle_z_report))
         .route("/api/sync/trigger", post(handle_sync_trigger))
+        // Ürün Yönetimi (CRUD)
+        .route("/api/products", get(handle_get_products))
+        .route("/api/products", post(handle_create_product))
+        .route("/api/products/:id", put(handle_update_product))
+        .route("/api/products/:id", delete(handle_delete_product))
+        .route("/api/categories", get(handle_get_categories))
+        // Müşteri & Veresiye Cari Yönetimi
+        .route("/api/customers", get(handle_customers))
+        .route("/api/customers", post(handle_create_customer))
+        .route("/api/customers/:id/ledger", get(handle_customer_ledger))
+        .route("/api/customers/payment", post(handle_customer_payment))
+        // Sepet Bekletme (Parked Carts)
+        .route("/api/cart/parked", get(handle_get_parked_carts))
+        .route("/api/cart/park", post(handle_park_cart))
+        .route("/api/cart/parked/:id", delete(handle_delete_parked_cart))
+        // Stok Sayım & Envanter Denetimi
+        .route("/api/stock/sessions", get(handle_get_stock_sessions))
+        .route("/api/stock/sessions", post(handle_start_stock_session))
+        .route("/api/stock/sessions/:id/items", get(handle_get_stock_items))
+        .route("/api/stock/sessions/:id/scan", post(handle_scan_stock_item))
+        .route("/api/stock/sessions/:id/commit", post(handle_commit_stock_session))
+        // Müşteri Ekranı (CFD) Durumu
+        .route("/api/cfd/state", get(handle_get_cfd_state))
+        .route("/api/cfd/update", post(handle_update_cfd_state))
         .layer(cors)
         .with_state(state)
 }
 
+// ==========================================
+// HTML Handler'lar
+// ==========================================
 async fn handle_index() -> Html<&'static str> {
     Html(ui::get_pos_html())
 }
 
+async fn handle_customer_display() -> Html<&'static str> {
+    Html(ui::get_customer_display_html())
+}
+
+// ==========================================
+// WebSocket Handler (Zero Latency Broadcast)
+// ==========================================
+async fn handle_ws_pos(
+    ws: WebSocketUpgrade,
+    State(state): State<Arc<AppState>>,
+) -> impl axum::response::IntoResponse {
+    ws.on_upgrade(move |socket| handle_ws_socket(socket, state))
+}
+
+async fn handle_ws_socket(mut socket: WebSocket, state: Arc<AppState>) {
+    let mut rx = state.ws_tx.subscribe();
+
+    // Bağlanır bağlanmaz güncel CFD durumunu müşteriye yolla
+    let current_cfd = state.db.get_cfd_state();
+    if let Ok(json) = serde_json::to_string(&serde_json::json!({
+        "type": "CFD_UPDATE",
+        "data": current_cfd
+    })) {
+        let _ = socket.send(Message::Text(json)).await;
+    }
+
+    loop {
+        tokio::select! {
+            // Sunucudan istemciye yayın
+            Ok(msg) = rx.recv() => {
+                if socket.send(Message::Text(msg)).await.is_err() {
+                    break;
+                }
+            }
+            // İstemciden gelen mesajlar (ping/pong veya sepet güncellemeleri)
+            client_msg = socket.next() => {
+                match client_msg {
+                    Some(Ok(Message::Text(txt))) => {
+                        // İstemciden CFD durumu gelirse diğer tüm ekranlara yay
+                        if let Ok(parsed) = serde_json::from_str::<CfdState>(&txt) {
+                            let _ = state.db.update_cfd_state(&parsed);
+                            let broadcast_msg = serde_json::json!({
+                                "type": "CFD_UPDATE",
+                                "data": parsed
+                            }).to_string();
+                            let _ = state.ws_tx.send(broadcast_msg);
+                        }
+                    }
+                    Some(Ok(Message::Close(_))) | None => break,
+                    _ => {}
+                }
+            }
+        }
+    }
+}
+
+// ==========================================
+// POS Temel API'lar
+// ==========================================
 async fn handle_status(State(state): State<Arc<AppState>>) -> Json<PosStatus> {
     let online = state.sync.is_online();
     let status = state.db.get_pos_status(online);
@@ -119,11 +236,9 @@ async fn handle_barcode_scan(
         embedded_price: parsed.embedded_price,
     };
 
-    // Önce lookup_code ile ürün ara
     let product_opt = state.db.find_product_by_barcode(&parsed.lookup_code);
 
     if let Some(product) = product_opt {
-        // Terazi veya adetli ürün için kalem oluştur
         let (qty, total) = if let Some(w) = parsed.weight_kg {
             let total = (w * product.price * 100.0).round() / 100.0;
             (w, total)
@@ -174,12 +289,28 @@ async fn handle_checkout(
 ) -> Result<Json<CheckoutResponse>, (StatusCode, String)> {
     match state.db.process_checkout(req) {
         Ok(sale) => {
-            info!("✅ Satış başarıyla tamamlandı: Fiş #{} - Tutar: {:.2} TL", sale.receipt_no, sale.grand_total);
-
-            // Termal Fiş ESC/POS baytlarını üret
+            info!("✅ Satış tamamlandı: Fiş #{} - {:.2} TL", sale.receipt_no, sale.grand_total);
             let _receipt_bytes = ReceiptPrinter::build_sale_receipt(&sale);
 
-            // Çevrimiçi ise arka planda anında bulut aktarımını tetikle
+            // Müşteri ekranını "Ödeme Tamamlandı" durumuna geçir ve yay
+            let cfd_update = CfdState {
+                state: "PAYMENT_COMPLETED".to_string(),
+                items: sale.items.clone(),
+                subtotal: sale.subtotal,
+                discount: sale.discount_amount,
+                grand_total: sale.grand_total,
+                tender: sale.tender_amount,
+                change: sale.change_amount,
+                payment_method: Some(sale.payment_method.clone()),
+                customer_name: sale.customer_name.clone(),
+                updated_at: chrono::Local::now().to_rfc3339(),
+            };
+            let _ = state.db.update_cfd_state(&cfd_update);
+            let _ = state.ws_tx.send(serde_json::json!({
+                "type": "CFD_UPDATE",
+                "data": cfd_update
+            }).to_string());
+
             state.sync.trigger_sync();
 
             Ok(Json(CheckoutResponse {
@@ -203,9 +334,97 @@ async fn handle_checkout(
     }
 }
 
+async fn handle_z_report(
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<ZReport>, (StatusCode, String)> {
+    match state.db.generate_z_report() {
+        Ok(report) => {
+            let _report_bytes = ReceiptPrinter::build_z_report(&report);
+            Ok(Json(report))
+        }
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Hata: {}", e))),
+    }
+}
+
+async fn handle_sync_trigger(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
+    state.sync.trigger_sync();
+    Json(serde_json::json!({
+        "success": true,
+        "message": "Senkronizasyon tetiklendi."
+    }))
+}
+
+// ==========================================
+// Ürün Yönetimi (CRUD) Handler'lar
+// ==========================================
+async fn handle_get_products(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<SearchQuery>,
+) -> Json<Vec<Product>> {
+    let prods = state.db.get_all_products(query.category.as_deref());
+    Json(prods)
+}
+
+async fn handle_create_product(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateProductRequest>,
+) -> Result<Json<Product>, (StatusCode, String)> {
+    match state.db.create_product(req) {
+        Ok(p) => Ok(Json(p)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Ürün eklenemedi: {}", e))),
+    }
+}
+
+async fn handle_update_product(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(req): Json<CreateProductRequest>,
+) -> Result<Json<Product>, (StatusCode, String)> {
+    match state.db.update_product(&id, req) {
+        Ok(p) => Ok(Json(p)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Ürün güncellenemedi: {}", e))),
+    }
+}
+
+async fn handle_delete_product(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    match state.db.delete_product(&id) {
+        Ok(_) => Ok(Json(serde_json::json!({"success": true, "id": id}))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Silinemedi: {}", e))),
+    }
+}
+
+async fn handle_get_categories(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {
+    let cats = state.db.get_categories();
+    Json(cats)
+}
+
+// ==========================================
+// Müşteri & Veresiye Handler'lar
+// ==========================================
 async fn handle_customers(State(state): State<Arc<AppState>>) -> Json<Vec<Customer>> {
     let list = state.db.get_customers();
     Json(list)
+}
+
+async fn handle_create_customer(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateCustomerRequest>,
+) -> Result<Json<Customer>, (StatusCode, String)> {
+    match state.db.create_customer(req) {
+        Ok(c) => Ok(Json(c)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Müşteri eklenemedi: {}", e))),
+    }
+}
+
+async fn handle_customer_ledger(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Json<Vec<LedgerEntry>> {
+    let ledger = state.db.get_customer_ledger(&id);
+    Json(ledger)
 }
 
 async fn handle_customer_payment(
@@ -231,31 +450,116 @@ async fn handle_customer_payment(
     }
 }
 
-async fn handle_z_report(
+// ==========================================
+// Sepet Bekletme (Parked Carts) Handler'lar
+// ==========================================
+async fn handle_get_parked_carts(State(state): State<Arc<AppState>>) -> Json<Vec<ParkedCart>> {
+    let carts = state.db.get_parked_carts();
+    Json(carts)
+}
+
+async fn handle_park_cart(
     State(state): State<Arc<AppState>>,
-) -> Result<Json<ZReport>, (StatusCode, String)> {
-    match state.db.generate_z_report() {
-        Ok(report) => {
-            let _report_bytes = ReceiptPrinter::build_z_report(&report);
-            Ok(Json(report))
-        }
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Hata: {}", e))),
+    Json(req): Json<ParkCartRequest>,
+) -> Result<Json<ParkedCart>, (StatusCode, String)> {
+    match state.db.park_cart(&req.note, req.items) {
+        Ok(p) => Ok(Json(p)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Sepet bekletilemedi: {}", e))),
     }
 }
 
-async fn handle_sync_trigger(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
-    state.sync.trigger_sync();
-    Json(serde_json::json!({
-        "success": true,
-        "message": "Senkronizasyon tetiklendi."
-    }))
+async fn handle_delete_parked_cart(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    match state.db.delete_parked_cart(&id) {
+        Ok(_) => Ok(Json(serde_json::json!({"success": true, "id": id}))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Silinemedi: {}", e))),
+    }
+}
+
+// ==========================================
+// Stok Sayım & Envanter Handler'lar
+// ==========================================
+async fn handle_get_stock_sessions(State(state): State<Arc<AppState>>) -> Json<Vec<StockCountSession>> {
+    let sessions = state.db.get_stock_count_sessions();
+    Json(sessions)
+}
+
+async fn handle_start_stock_session(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<StartCountRequest>,
+) -> Result<Json<StockCountSession>, (StatusCode, String)> {
+    match state.db.start_stock_count(&req.title, &req.count_type, req.notes.as_deref()) {
+        Ok(s) => Ok(Json(s)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Sayım başlatılamadı: {}", e))),
+    }
+}
+
+async fn handle_get_stock_items(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+) -> Json<Vec<StockCountItem>> {
+    let items = state.db.get_stock_count_items(&session_id);
+    Json(items)
+}
+
+async fn handle_scan_stock_item(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+    Json(req): Json<ScanCountItemRequest>,
+) -> Result<Json<StockCountItem>, (StatusCode, String)> {
+    match state.db.add_stock_count_item(&session_id, &req.barcode, req.qty) {
+        Ok(item) => Ok(Json(item)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Sayım kalemi eklenemedi: {}", e))),
+    }
+}
+
+async fn handle_commit_stock_session(
+    State(state): State<Arc<AppState>>,
+    Path(session_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    match state.db.commit_stock_count(&session_id) {
+        Ok(_) => Ok(Json(serde_json::json!({
+            "success": true,
+            "session_id": session_id,
+            "message": "Sayım onaylandı ve ürün stokları güncellendi."
+        }))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Sayım onaylanamadı: {}", e))),
+    }
+}
+
+// ==========================================
+// Müşteri Ekranı (CFD) Durum Handler'lar
+// ==========================================
+async fn handle_get_cfd_state(State(state): State<Arc<AppState>>) -> Json<CfdState> {
+    let cfd = state.db.get_cfd_state();
+    Json(cfd)
+}
+
+async fn handle_update_cfd_state(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CfdState>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    if let Err(e) = state.db.update_cfd_state(&req) {
+        return Err((StatusCode::INTERNAL_SERVER_ERROR, format!("CFD kaydedilemedi: {}", e)));
+    }
+
+    // WebSocket üzerinden tüm 2. ekranlara anlık fırlat
+    let msg = serde_json::json!({
+        "type": "CFD_UPDATE",
+        "data": req
+    }).to_string();
+    let _ = state.ws_tx.send(msg);
+
+    Ok(Json(serde_json::json!({"success": true})))
 }
 
 pub async fn start_server(state: Arc<AppState>, port: u16) -> anyhow::Result<()> {
     let app = create_router(state);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!("🚀 QORDY POS HTTP Server dinlemede: http://{}", addr);
+    info!("🚀 QORDY POS HTTP & WebSocket Server dinlemede: http://{}", addr);
 
     tokio::spawn(async move {
         if let Err(e) = axum::serve(listener, app).await {

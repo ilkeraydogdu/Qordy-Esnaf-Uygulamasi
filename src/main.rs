@@ -82,10 +82,13 @@ fn main() -> Result<()> {
         register_id,
     );
 
+    let (ws_tx, _ws_rx) = tokio::sync::broadcast::channel(100);
+
     // Arka plan işçilerini async runtime içinde başlat
     let app_state = Arc::new(AppState {
         db: db.clone(),
         sync: sync_engine.clone(),
+        ws_tx,
     });
 
     let sync_clone = sync_engine.clone();

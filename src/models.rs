@@ -144,3 +144,74 @@ pub struct PosStatus {
     pub local_ip: String,
     pub port: u16,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CfdState {
+    pub state: String, // "IDLE", "ACTIVE_SALE", "PAYMENT_COMPLETED"
+    pub items: Vec<CartItem>,
+    pub subtotal: f64,
+    pub discount: f64,
+    pub grand_total: f64,
+    pub tender: f64,
+    pub change: f64,
+    pub payment_method: Option<String>,
+    pub customer_name: Option<String>,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockCountSession {
+    pub id: String,
+    pub title: String,
+    pub count_type: String, // "FULL", "CATEGORY", "SPOT"
+    pub status: String,     // "OPEN", "COMMITTED", "CANCELLED"
+    pub started_at: String,
+    pub completed_at: Option<String>,
+    pub total_items_counted: usize,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockCountItem {
+    pub id: String,
+    pub session_id: String,
+    pub product_id: String,
+    pub barcode: String,
+    pub product_name: String,
+    pub system_qty: f64,
+    pub counted_qty: f64,
+    pub variance_qty: f64, // counted_qty - system_qty (negatif = eksik, pozitif = fazla)
+    pub unit: String,
+    pub counted_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParkedCart {
+    pub id: String,
+    pub note: String,
+    pub items: Vec<CartItem>,
+    pub grand_total: f64,
+    pub item_count: usize,
+    pub parked_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateProductRequest {
+    pub barcode: String,
+    pub name: String,
+    pub category: String,
+    pub price: f64,
+    pub vat_rate: f64,
+    pub stock_qty: f64,
+    pub unit: String,
+    pub is_weighed: bool,
+    pub quick_order: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCustomerRequest {
+    pub name: String,
+    pub phone: String,
+    pub credit_limit: f64,
+    pub note: Option<String>,
+}
