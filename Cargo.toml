@@ -1,0 +1,59 @@
+[package]
+name = "qordy_pos_rs"
+version = "3.0.0"
+edition = "2021"
+authors = ["QORDY <info@qordy.com>"]
+description = "QORDY Enterprise Esnaf & Retail Offline-First Desktop POS (Rust Edition)"
+
+[dependencies]
+# Async Runtime & Concurrency
+tokio = { version = "1.38", features = ["full"] }
+parking_lot = "0.12"
+futures-util = "0.3"
+async-trait = "0.1"
+
+# Local Embedded Database (Offline-First SQLite Engine with Bundled C source)
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Local Embedded Web Server (For Native POS UI & Local Handheld Scanners)
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Cloud REST API Sync Client
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Serialization & Models
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Time & Identity
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.8", features = ["v4", "serde"] }
+
+# Logging & Telemetry
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "time", "fmt"] }
+
+# Error Handling & Utilities
+anyhow = "1.0"
+thiserror = "1.0"
+local-ip-address = "0.6"
+
+# Native Desktop Window & WebKit Engine
+tao = "0.31"
+wry = "0.47"
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26"
+objc = "0.2"
+
+[dev-dependencies]
+tempfile = "3.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
