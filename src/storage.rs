@@ -1,7 +1,8 @@
 use crate::models::{
-    CartItem, CfdState, CheckoutRequest, CreateCustomerRequest, CreateProductRequest, Customer,
-    LedgerEntry, ParkedCart, PosStatus, Product, Sale, StockCountItem, StockCountSession,
-    VatSummary, ZReport,
+    CartItem, CashMovement, CfdState, CheckoutRequest, CreateCustomerRequest, CreateProductRequest,
+    CreateWasteRequest, Customer, LedgerEntry, ParkedCart, PosStatus, Product,
+    RefundRequest, RefundResponse, Sale, ShelfLabel, StockCountItem, StockCountSession,
+    VatSummary, WasteRecord, ZReport,
 };
 use anyhow::Result;
 use chrono::Local;
@@ -225,6 +226,41 @@ impl DatabaseManager {
                 state TEXT NOT NULL,
                 payload_json TEXT NOT NULL,
                 updated_at TEXT NOT NULL
+            );
+
+            -- Fire / Zayi Takibi
+            CREATE TABLE IF NOT EXISTS waste_records (
+                id TEXT PRIMARY KEY,
+                product_id TEXT NOT NULL,
+                product_name TEXT NOT NULL,
+                barcode TEXT NOT NULL,
+                quantity REAL NOT NULL,
+                unit TEXT NOT NULL,
+                cost_loss REAL NOT NULL,
+                reason TEXT NOT NULL,
+                recorded_at TEXT NOT NULL
+            );
+
+            -- İade İşlemleri (Kısmi & Tam İade)
+            CREATE TABLE IF NOT EXISTS refunds (
+                id TEXT PRIMARY KEY,
+                sale_id TEXT NOT NULL,
+                refund_receipt_no TEXT NOT NULL UNIQUE,
+                items_json TEXT NOT NULL,
+                refund_amount REAL NOT NULL,
+                reason TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+
+            -- Kasa Para Giriş / Çıkış Hareketleri (Masraf / Avans)
+            CREATE TABLE IF NOT EXISTS cash_movements (
+                id TEXT PRIMARY KEY,
+                movement_type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                reason TEXT NOT NULL,
+                register_id TEXT NOT NULL,
+                cashier_name TEXT NOT NULL,
+                created_at TEXT NOT NULL
             );
             ",
         )?;
@@ -1363,6 +1399,254 @@ impl DatabaseManager {
             payment_method: None,
             customer_name: None,
             updated_at: Local::now().to_rfc3339(),
+        }
+    }
+
+    /// Fire / Zayi Kaydı Ekle (Stoktan Düşülür)
+    pub fn record_waste(&self, req: CreateWasteRequest) -> Result<WasteRecord> {
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction()?;
+
+        // Ürünü bul
+        let (prod_id, prod_name, unit, price): (String, String, String, f64) = tx.query_row(
+            "SELECT id, name, unit, price FROM products WHERE barcode = ?1 LIMIT 1",
+            params![req.barcode],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        )?;
+
+        let cost_loss = req.quantity * price;
+        let now = Local::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+
+        // Stoktan düş
+        tx.execute(
+            "UPDATE products SET stock_qty = stock_qty - ?1, updated_at = ?2 WHERE id = ?3",
+            params![req.quantity, now, prod_id],
+        )?;
+
+        // Fire tablosuna ekle
+        tx.execute(
+            "INSERT INTO waste_records (id, product_id, product_name, barcode, quantity, unit, cost_loss, reason, recorded_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![id, prod_id, prod_name, req.barcode, req.quantity, unit, cost_loss, req.reason, now],
+        )?;
+
+        tx.commit()?;
+
+        Ok(WasteRecord {
+            id,
+            product_id: prod_id,
+            product_name: prod_name,
+            barcode: req.barcode,
+            quantity: req.quantity,
+            unit,
+            cost_loss,
+            reason: req.reason,
+            recorded_at: now,
+        })
+    }
+
+    /// Fire Kayıtları Listesi
+    pub fn get_waste_records(&self) -> Vec<WasteRecord> {
+        let conn = self.conn.lock();
+        let mut stmt = match conn.prepare(
+            "SELECT id, product_id, product_name, barcode, quantity, unit, cost_loss, reason, recorded_at
+             FROM waste_records ORDER BY recorded_at DESC LIMIT 100"
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let rows = stmt.query_map([], |r| {
+            Ok(WasteRecord {
+                id: r.get(0)?,
+                product_id: r.get(1)?,
+                product_name: r.get(2)?,
+                barcode: r.get(3)?,
+                quantity: r.get(4)?,
+                unit: r.get(5)?,
+                cost_loss: r.get(6)?,
+                reason: r.get(7)?,
+                recorded_at: r.get(8)?,
+            })
+        });
+
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Kısmi veya Tam İade İşlemi
+    pub fn process_refund(&self, req: RefundRequest) -> Result<RefundResponse> {
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction()?;
+
+        let now = Local::now();
+        let refund_id = Uuid::new_v4().to_string();
+        let refund_receipt_no = format!("IAD-{}-{:06}", now.format("%Y%m%d%H%M%S"), now.timestamp_subsec_micros());
+
+        // İade edilen ürünlerin stoklarını geri yükle
+        for item in &req.items {
+            tx.execute(
+                "UPDATE products SET stock_qty = stock_qty + ?1 WHERE id = ?2",
+                params![item.quantity, item.product_id],
+            )?;
+        }
+
+        let items_json = serde_json::to_string(&req.items)?;
+
+        tx.execute(
+            "INSERT INTO refunds (id, sale_id, refund_receipt_no, items_json, refund_amount, reason, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![refund_id, req.sale_id, refund_receipt_no, items_json, req.refund_amount, req.reason, now.to_rfc3339()],
+        )?;
+
+        tx.commit()?;
+
+        Ok(RefundResponse {
+            success: true,
+            refund_id,
+            refund_receipt_no,
+            refunded_amount: req.refund_amount,
+            message: "İade işlemi başarıyla tamamlandı ve stoklar iade edildi.".to_string(),
+        })
+    }
+
+    /// Son İşlem Geçmişi (Fiş Listesi)
+    pub fn get_sales_history(&self, limit: usize) -> Vec<Sale> {
+        let conn = self.conn.lock();
+        let mut stmt = match conn.prepare(
+            "SELECT id, receipt_no, tenant_id, branch_id, branch_name, register_id, cashier_id, cashier_name,
+                    subtotal, vat_amount, discount_amount, grand_total, payment_method, customer_id, customer_name,
+                    tender_amount, change_amount, created_at, sync_status
+             FROM sales ORDER BY created_at DESC LIMIT ?1"
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let rows = stmt.query_map(params![limit], |r| {
+            let sale_id: String = r.get(0)?;
+            Ok(Sale {
+                id: sale_id.clone(),
+                receipt_no: r.get(1)?,
+                tenant_id: r.get(2)?,
+                branch_id: r.get(3)?,
+                branch_name: r.get(4)?,
+                register_id: r.get(5)?,
+                cashier_id: r.get(6)?,
+                cashier_name: r.get(7)?,
+                subtotal: r.get(8)?,
+                vat_amount: r.get(9)?,
+                discount_amount: r.get(10)?,
+                grand_total: r.get(11)?,
+                payment_method: r.get(12)?,
+                customer_id: r.get(13)?,
+                customer_name: r.get(14)?,
+                tender_amount: r.get(15)?,
+                change_amount: r.get(16)?,
+                items: Vec::new(),
+                created_at: r.get(17)?,
+                sync_status: r.get(18)?,
+            })
+        });
+
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Kasa Para Giriş / Çıkış Hareketi (Avans / Masraf)
+    pub fn record_cash_movement(&self, movement_type: &str, amount: f64, reason: &str) -> Result<CashMovement> {
+        let conn = self.conn.lock();
+        let id = Uuid::new_v4().to_string();
+        let now = Local::now().to_rfc3339();
+        let register_id = "KASA-01";
+        let cashier_name = "Ahmet Kasiyer";
+
+        conn.execute(
+            "INSERT INTO cash_movements (id, movement_type, amount, reason, register_id, cashier_name, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![id, movement_type, amount, reason, register_id, cashier_name, now],
+        )?;
+
+        Ok(CashMovement {
+            id,
+            movement_type: movement_type.to_string(),
+            amount,
+            reason: reason.to_string(),
+            register_id: register_id.to_string(),
+            cashier_name: cashier_name.to_string(),
+            created_at: now,
+        })
+    }
+
+    /// Kasa Hareketleri Listesi
+    pub fn get_cash_movements(&self) -> Vec<CashMovement> {
+        let conn = self.conn.lock();
+        let mut stmt = match conn.prepare(
+            "SELECT id, movement_type, amount, reason, register_id, cashier_name, created_at
+             FROM cash_movements ORDER BY created_at DESC LIMIT 50"
+        ) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let rows = stmt.query_map([], |r| {
+            Ok(CashMovement {
+                id: r.get(0)?,
+                movement_type: r.get(1)?,
+                amount: r.get(2)?,
+                reason: r.get(3)?,
+                register_id: r.get(4)?,
+                cashier_name: r.get(5)?,
+                created_at: r.get(6)?,
+            })
+        });
+
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(_) => Vec::new(),
+        }
+    }
+
+    /// Raf & Barkod Etiketleri Verisi
+    pub fn get_shelf_labels(&self, category: Option<&str>) -> Vec<ShelfLabel> {
+        let conn = self.conn.lock();
+        let (sql, filter_param) = if let Some(cat) = category {
+            ("SELECT id, barcode, name, price, unit, vat_rate, category FROM products WHERE category = ?1 ORDER BY name ASC", Some(cat))
+        } else {
+            ("SELECT id, barcode, name, price, unit, vat_rate, category FROM products ORDER BY name ASC", None)
+        };
+
+        let mut stmt = match conn.prepare(sql) {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+
+        let map_row = |r: &rusqlite::Row| {
+            Ok(ShelfLabel {
+                product_id: r.get(0)?,
+                barcode: r.get(1)?,
+                name: r.get(2)?,
+                price: r.get(3)?,
+                unit: r.get(4)?,
+                vat_rate: r.get(5)?,
+                category: r.get(6)?,
+            })
+        };
+
+        let rows = if let Some(cat) = filter_param {
+            stmt.query_map(params![cat], map_row)
+        } else {
+            stmt.query_map([], map_row)
+        };
+
+        match rows {
+            Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
+            Err(_) => Vec::new(),
         }
     }
 }

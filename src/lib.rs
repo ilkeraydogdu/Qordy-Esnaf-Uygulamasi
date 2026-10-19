@@ -4,4 +4,5 @@ pub mod models;
 pub mod server;
 pub mod storage;
 pub mod sync;
+pub mod terminal;
 pub mod ui;

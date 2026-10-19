@@ -291,4 +291,165 @@ mod tests {
         assert_eq!(retrieved.state, "ACTIVE_SALE");
         assert_eq!(retrieved.grand_total, 120.0);
     }
+
+    #[tokio::test]
+    async fn test_terminal_payment_and_mock_execution() {
+        use qordy_pos_rs::terminal::{MockTerminal, PaymentTerminal, TerminalPaymentRequest};
+
+        let terminal = MockTerminal;
+        let req = TerminalPaymentRequest {
+            amount: 145.50,
+            txn_type: "SALE".to_string(),
+            order_ref: "ORD-991".to_string(),
+            print_slip_on_pos: true,
+        };
+
+        let result = terminal.process_payment(&req).await.expect("Mock ödeme başarılı olmalı");
+        assert!(result.success);
+        assert!(result.is_approved);
+        assert_eq!(result.card_brand, "TROY");
+        assert!(!result.auth_code.is_empty());
+        assert!(!result.rrn.is_empty());
+        assert_eq!(result.card_masked, "5400 **** **** 8821");
+
+        let is_online = terminal.test_connection().await.unwrap();
+        assert!(is_online);
+    }
+
+    #[test]
+    fn test_beko_gmp3_tcp_payload_and_amount_krs() {
+        // QORDY standardı: tutar kuruş cinsinden (amount * 100)
+        let amount_try: f64 = 49.90;
+        let amount_krs = (amount_try * 100.0).round() as u64;
+        assert_eq!(amount_krs, 4990);
+
+        let payload = serde_json::json!({
+            "version": "1.0",
+            "command": "SALE",
+            "amount_krs": amount_krs,
+            "currency": "TRY",
+            "order_ref": "REF-12345",
+            "print_slip": true,
+            "timestamp": 1792450000,
+        });
+
+        assert_eq!(payload["amount_krs"], 4990);
+        assert_eq!(payload["command"], "SALE");
+    }
+
+    #[test]
+    fn test_waste_records_and_automatic_stock_deduction() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        use qordy_pos_rs::models::CreateWasteRequest;
+
+        // Ekmek stoğu başlangıç: 150
+        let initial_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(initial_bread.stock_qty, 150.0);
+
+        // 5 ekmek bayatladı (Fire kaydı)
+        let req = CreateWasteRequest {
+            barcode: "8690504018087".to_string(),
+            quantity: 5.0,
+            reason: "BAYAT / SKT".to_string(),
+        };
+
+        let waste = db.record_waste(req).expect("Fire kaydedilmeli");
+        assert_eq!(waste.quantity, 5.0);
+        assert_eq!(waste.cost_loss, 50.0); // 5 * 10.0 TL
+
+        // Stok otomatik 145'e düşmeli
+        let updated_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(updated_bread.stock_qty, 145.0);
+
+        // Fire listesinde görünmeli
+        let list = db.get_waste_records();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].reason, "BAYAT / SKT");
+    }
+
+    #[test]
+    fn test_itemized_refund_and_stock_return() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        use qordy_pos_rs::models::{RefundItem, RefundRequest};
+
+        // Önce satış yapalım: 4 ekmek satılsın
+        let bread = db.find_product_by_barcode("8690504018087").unwrap();
+        let sale = db.process_checkout(CheckoutRequest {
+            items: vec![CartItem {
+                product_id: bread.id.clone(),
+                barcode: bread.barcode.clone(),
+                name: bread.name.clone(),
+                unit_price: bread.price,
+                quantity: 4.0,
+                unit: "adet".to_string(),
+                vat_rate: bread.vat_rate,
+                discount: 0.0,
+                total: 40.0,
+                is_weighed: false,
+                notes: None,
+            }],
+            payment_method: "CASH".to_string(),
+            customer_id: None,
+            tender_amount: Some(50.0),
+            discount_amount: None,
+            notes: None,
+        }).expect("Satış yapılmalı");
+
+        // Satıştan sonra stok 150 - 4 = 146 oldu
+        let post_sale_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(post_sale_bread.stock_qty, 146.0);
+
+        // Müşteri 2 adet ekmeği iade ediyor
+        let refund_req = RefundRequest {
+            sale_id: sale.id.clone(),
+            items: vec![RefundItem {
+                product_id: bread.id.clone(),
+                barcode: bread.barcode.clone(),
+                name: bread.name.clone(),
+                unit_price: bread.price,
+                quantity: 2.0,
+                unit: "adet".to_string(),
+                total: 20.0,
+            }],
+            refund_amount: 20.0,
+            reason: "Müşteri vazgeçti".to_string(),
+        };
+
+        let refund_res = db.process_refund(refund_req).expect("İade işlenmeli");
+        assert!(refund_res.success);
+        assert_eq!(refund_res.refunded_amount, 20.0);
+
+        // Stok iade edilen 2 adet ile 148 olmalı
+        let post_refund_bread = db.find_product_by_barcode("8690504018087").unwrap();
+        assert_eq!(post_refund_bread.stock_qty, 148.0);
+    }
+
+    #[test]
+    fn test_cash_movements_and_shelf_labels() {
+        let temp_file = NamedTempFile::new().expect("Temp file failed");
+        let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
+
+        // 1. Kasa Avans Girişi (250 TL bozuk para ilavesi)
+        let m1 = db.record_cash_movement("IN", 250.0, "Gün başı bozuk para avansı").expect("Kasa girişi kaydedilmeli");
+        assert_eq!(m1.movement_type, "IN");
+        assert_eq!(m1.amount, 250.0);
+
+        // 2. Kasa Masraf Çıkışı (75 TL dükkan temizlik malzemesi)
+        let m2 = db.record_cash_movement("OUT", 75.0, "Temizlik malzemesi alımı").expect("Kasa çıkışı kaydedilmeli");
+        assert_eq!(m2.movement_type, "OUT");
+        assert_eq!(m2.amount, 75.0);
+
+        let movements = db.get_cash_movements();
+        assert_eq!(movements.len(), 2);
+
+        // 3. Raf Etiketleri
+        let labels = db.get_shelf_labels(None);
+        assert!(!labels.is_empty());
+        let bread_label = labels.iter().find(|l| l.barcode == "8690504018087").unwrap();
+        assert_eq!(bread_label.price, 10.0);
+    }
 }

@@ -479,6 +479,109 @@ pub fn get_pos_html() -> &'static str {
       font-size: 13px;
       font-weight: 600;
     }
+
+    /* Shelf Label Styles (Turkish Market Standard) */
+    .shelf-label-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .shelf-label-card {
+      background: #ffffff;
+      color: #111827;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      position: relative;
+    }
+    .shelf-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    .shelf-prod-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+    .shelf-badge-origin {
+      background: #dc2626;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .shelf-price-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px dashed #cbd5e1;
+    }
+    .shelf-price-main {
+      font-size: 36px;
+      font-weight: 900;
+      color: #b91c1c;
+      letter-spacing: -1px;
+    }
+    .shelf-price-unit {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .shelf-barcode-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f8fafc;
+      padding: 6px;
+      border-radius: 6px;
+    }
+    .shelf-barcode-bars {
+      font-family: monospace;
+      letter-spacing: 3px;
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+    }
+    .shelf-barcode-num {
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    /* Terminal Payment Pulse Animation */
+    .pulse-terminal {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, 0.2);
+      border: 3px solid var(--apple-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      animation: pulse-ring 1.5s infinite;
+      margin: 0 auto;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(59, 130, 246, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+    }
   </style>
 </head>
 <body>
@@ -495,12 +598,16 @@ pub fn get_pos_html() -> &'static str {
 
     <!-- Navigation Tabs -->
     <nav class="nav-segmented">
-      <button class="nav-seg-btn active" onclick="switchMainScreen('pos')">🛒 Kasa (POS)</button>
-      <button class="nav-seg-btn" onclick="openCustomerDisplayTab()">📺 2. Ekran</button>
+      <button class="nav-seg-btn active" onclick="switchMainScreen('pos')">🛒 Kasa</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('transactions')">🧾 İşlemler & İade</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('products')">📦 Ürünler</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('stock')">📋 Stok Sayım</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('customers')">📒 Veresiye Defteri</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('wastes')">🗑️ Fire Takibi</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('labels')">🏷️ Raf Etiketleri</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('cash')">💵 Kasa Hareketleri</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('reports')">📊 Z-Raporu</button>
+      <button class="nav-seg-btn" onclick="openCustomerDisplayTab()">📺 2. Ekran</button>
     </nav>
 
     <!-- Right Controls -->
@@ -509,6 +616,9 @@ pub fn get_pos_html() -> &'static str {
         <div class="pulse-dot"></div>
         <span id="netStatusText">Çevrimdışı (Lokal)</span>
       </div>
+      <button class="btn-top-action" onclick="openTerminalConfigModal()">
+        <span>💳 POS Cihazı</span>
+      </button>
       <button class="btn-top-action" onclick="openParkedCartsModal()">
         <span>⏸️ Bekleyenler</span>
         <span id="parkedBadgeCount" style="color:var(--apple-amber); font-weight:700;">(0)</span>
@@ -701,6 +811,117 @@ pub fn get_pos_html() -> &'static str {
         <!-- Z Raporu Özeti -->
       </div>
     </div>
+
+    <!-- SCREEN 6: İŞLEM GEÇMİŞİ & İADE -->
+    <div class="screen-view crud-layout" id="screen-transactions">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">Satış İşlemleri & Kalem İade Merkezi</div>
+          <div style="font-size:12px; color:var(--text-muted);">Geçmiş satış fişleri, tahsilatlar ve kalem bazlı parçalı iade yönetimi</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="transactionsSearch" class="crud-search-bar" style="width:260px;" placeholder="Fiş No veya Tarih Ara..." oninput="filterTransactions()">
+          <button class="btn-top-action" onclick="loadTransactionsList()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="crud-table-wrap">
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>Fiş No</th>
+              <th>Tarih / Saat</th>
+              <th>Ödeme Türü</th>
+              <th>Tutar (₺)</th>
+              <th>Kalem Sayısı</th>
+              <th>Durum</th>
+              <th style="text-align:right;">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREEN 7: FİRE / ZAYİ TAKİBİ -->
+    <div class="screen-view crud-layout" id="screen-wastes">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">Fire & Zayi Takip Merkezi</div>
+          <div style="font-size:12px; color:var(--text-muted);">Bozulma, bayatlama, kırılma ve SKT nedeniyle stoktan otomatik düşülen ürünler</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-checkout btn-cash" style="padding:10px 18px; font-size:13px;" onclick="openNewWasteModal()">
+            + Yeni Fire / Zayi Kaydet
+          </button>
+          <button class="btn-top-action" onclick="loadWasteList()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="crud-table-wrap">
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>Tarih / Saat</th>
+              <th>Ürün Adı</th>
+              <th>Barkod</th>
+              <th>Miktar</th>
+              <th>Zarar / Maliyet (₺)</th>
+              <th>Sebep</th>
+            </tr>
+          </thead>
+          <tbody id="wasteTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREEN 8: RAF ETİKETLERİ -->
+    <div class="screen-view crud-layout" id="screen-labels">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">Raf & Barkod Etiket Merkezi</div>
+          <div style="font-size:12px; color:var(--text-muted);">Türk perakende standartlarında yerli üretim logolu raf etiketleri ve barkod basımı</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-top-action" onclick="window.print()">🖨️ Sayfayı Yazdır (Termal / A4)</button>
+          <button class="btn-top-action" onclick="loadShelfLabels()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="shelf-label-grid" id="shelfLabelsGrid">
+        <!-- Raf Etiketleri Dinamik Yüklenir -->
+      </div>
+    </div>
+
+    <!-- SCREEN 9: KASA HAREKETLERİ (AVANS & MASRAF) -->
+    <div class="screen-view crud-layout" id="screen-cash">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">Kasa Finans & Nakit Hareketleri</div>
+          <div style="font-size:12px; color:var(--text-muted);">Gün başı devir, bozuk para avans girişi ve dükkan masraf çıkışları</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-checkout btn-cash" style="padding:10px 16px; font-size:13px;" onclick="openCashMovementModal('IN')">
+            + Kasa Avans Girişi
+          </button>
+          <button class="btn-checkout btn-danger" style="padding:10px 16px; font-size:13px;" onclick="openCashMovementModal('OUT')">
+            - Masraf Çıkışı Yap
+          </button>
+          <button class="btn-top-action" onclick="loadCashMovements()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="crud-table-wrap">
+        <table class="crud-table">
+          <thead>
+            <tr>
+              <th>Tarih / Saat</th>
+              <th>Hareket Türü</th>
+              <th>Tutar (₺)</th>
+              <th>Açıklama / Sebep</th>
+              <th>Kasa / Kasiyer</th>
+            </tr>
+          </thead>
+          <tbody id="cashMovementsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
   <!-- ==========================================================
@@ -857,6 +1078,156 @@ pub fn get_pos_html() -> &'static str {
     </div>
   </div>
 
+  <!-- Kalem Bazlı İade Modalı -->
+  <div class="modal-overlay" id="refundModal">
+    <div class="modal-window" style="width:620px;">
+      <div class="modal-heading">Kalem Bazlı Parçalı İade</div>
+      <div style="background:#0b0f19; padding:12px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:12px; color:var(--text-muted);">Fiş No: </span>
+          <span id="refundModalReceiptNo" style="font-weight:700; font-family:monospace; color:var(--apple-blue);"></span>
+        </div>
+        <div>
+          <span style="font-size:12px; color:var(--text-muted);">Orijinal Tutar: </span>
+          <span id="refundModalOriginalTotal" style="font-weight:700; color:var(--text-main);"></span>
+        </div>
+      </div>
+      <div style="font-size:12px; font-weight:600; color:var(--text-muted);">İade Edilecek Kalemleri Seçin:</div>
+      <div id="refundItemsList" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="form-group">
+        <label>İade Nedeni:</label>
+        <select id="refundReasonSelect" class="form-input">
+          <option value="Müşteri Vazgeçti">Müşteri Vazgeçti / İptal</option>
+          <option value="Hatalı Ürün / Bozuk">Hatalı Ürün / Bozuk / Kusurlu</option>
+          <option value="Yanlış Ürün Okutuldu">Yanlış Ürün / Barkod Hatası</option>
+          <option value="Fiyat İtirazı">Fiyat Uyuşmazlığı</option>
+          <option value="Diğer">Diğer</option>
+        </select>
+      </div>
+      <div style="background:#0b0f19; padding:14px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:14px; font-weight:700;">Toplam İade Tutarı:</span>
+        <span id="refundTotalAmountText" style="font-size:24px; font-weight:900; color:var(--apple-green);">0.00 ₺</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('refundModal')">Vazgeç</button>
+        <button class="btn-checkout btn-danger" style="flex:2;" onclick="confirmItemRefund()">İADEYİ ONAYLA & STOK İADE ET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Fire / Zayi Kaydet Modalı -->
+  <div class="modal-overlay" id="newWasteModal">
+    <div class="modal-window">
+      <div class="modal-heading">Yeni Fire / Zayi Kaydı</div>
+      <div class="form-group">
+        <label>Barkod veya Ürün:</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="wasteBarcode" class="form-input" style="flex:1;" placeholder="Barkod okutun veya yazın..." onchange="lookupWasteProduct()">
+          <button class="btn-top-action" onclick="lookupWasteProduct()">Bul</button>
+        </div>
+        <div id="wasteProductInfo" style="font-size:12px; color:var(--apple-blue); font-weight:600; min-height:16px;"></div>
+      </div>
+      <div class="form-group">
+        <label>Fire Miktarı (Adet veya KG):</label>
+        <input type="number" id="wasteQuantity" class="form-input" step="0.01" min="0.01" placeholder="1.00">
+      </div>
+      <div class="form-group">
+        <label>Fire / Zayi Nedeni:</label>
+        <select id="wasteReason" class="form-input">
+          <option value="BAYAT / SKT">Son Tüketim Tarihi Geçti (SKT / Bayat)</option>
+          <option value="KIRILDI / HASAR">Kırıldı / Hasar Gördü / Ambalaj Yırtık</option>
+          <option value="ÇÜRÜME / BOZULMA">Çürüme / Bozulma (Manav Reyonu)</option>
+          <option value="DİĞER">Diğer Zayi</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('newWasteModal')">İptal</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="saveWasteRecord()">KAYDET & STOKTAN DÜŞ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kasa Hareketi (Avans / Masraf) Modalı -->
+  <div class="modal-overlay" id="cashMovementModal">
+    <div class="modal-window">
+      <div class="modal-heading" id="cashMovementHeading">Kasa Nakit Hareketi</div>
+      <input type="hidden" id="cashMovementType" value="IN">
+      <div class="form-group">
+        <label>Tutar (₺):</label>
+        <input type="number" id="cashMovementAmount" class="form-input" style="font-size:20px; font-weight:800;" step="0.5" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Açıklama / Sebep:</label>
+        <input type="text" id="cashMovementReason" class="form-input" placeholder="Örn: Gün başı bozuk para avansı, dükkan temizlik alımı...">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('cashMovementModal')">İptal</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" id="btnSubmitCashMovement" onclick="submitCashMovement()">KAYDET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Beko ÖKC & POS Cihazı Ayar Modalı -->
+  <div class="modal-overlay" id="terminalConfigModal">
+    <div class="modal-window">
+      <div class="modal-heading">💳 POS Cihazı & ÖKC Donanım Ayarları</div>
+      <div style="font-size:12px; color:var(--text-muted); line-height:1.4;">
+        Masa başında veya fiziki cihaz henüz yokken <b>Sanal POS Simülatörü</b> ile birebir banka onayı test edebilir; dükkandaki canlı <b>Beko GMP3 ÖKC</b> cihazınızı yerel ağ üzerinden sisteme bozmadan entegre edebilirsiniz.
+      </div>
+      <div class="form-group">
+        <label>Çalışma Modu:</label>
+        <select id="terminalMode" class="form-input" onchange="updateTerminalFieldsVisibility()">
+          <option value="MOCK">🧪 Sanal POS Simülatörü (Test & Geliştirme)</option>
+          <option value="BEKO_TCP">🔌 Beko GMP3 ÖKC (Yerel Ağ / TCP-IP)</option>
+        </select>
+      </div>
+      <div id="terminalNetworkFields" style="display:none; flex-direction:column; gap:12px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Cihaz IP Adresi:</label>
+            <input type="text" id="terminalHost" class="form-input" placeholder="192.168.1.150">
+          </div>
+          <div class="form-group">
+            <label>Port (GMP3):</label>
+            <input type="number" id="terminalPort" class="form-input" placeholder="9000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Zaman Aşımı (sn):</label>
+          <input type="number" id="terminalTimeout" class="form-input" placeholder="45">
+        </div>
+      </div>
+      <div id="terminalTestStatus" style="font-size:12px; font-weight:600; min-height:16px;"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="testTerminalConnection()">🔌 Bağlantıyı Test Et</button>
+        <button class="btn-checkout btn-card" style="flex:1.5;" onclick="saveTerminalConfig()">KAYDET & AKTİF ET</button>
+      </div>
+      <button class="btn-top-action" style="justify-content:center;" onclick="closeModal('terminalConfigModal')">Kapat</button>
+    </div>
+  </div>
+
+  <!-- EFT-POS Kart Ödeme Modalı (Beko & Mock) -->
+  <div class="modal-overlay" id="eftPosPayModal">
+    <div class="modal-window" style="text-align:center;">
+      <div class="modal-heading">EFT-POS Kart Tahsilatı</div>
+      <div style="font-size:12px; color:var(--apple-blue); font-weight:600;" id="eftPosDeviceLabel">Sanal POS Simülatörü</div>
+      <div style="background:#0b0f19; padding:20px; border-radius:14px; margin:8px 0;">
+        <div style="font-size:12px; color:var(--text-muted);">Ödenecek Tutar</div>
+        <div style="font-size:36px; font-weight:900; color:#38bdf8;" id="eftPosAmountText">0.00 ₺</div>
+      </div>
+      <div class="pulse-terminal" id="eftPosIcon">💳</div>
+      <div style="font-size:14px; font-weight:700; color:var(--text-main);" id="eftPosStatusText">
+        Kartınızı Okutunuz veya Şifrenizi Giriniz...
+      </div>
+      <div style="font-size:12px; color:var(--text-muted);" id="eftPosSubtext">
+        Cihazdan provizyon yanıtı bekleniyor
+      </div>
+      <div id="eftPosDetails" style="display:none; background:#0b0f19; padding:12px; border-radius:10px; font-size:12px; text-align:left; font-family:monospace;">
+      </div>
+      <button class="btn-top-action" id="eftPosCancelBtn" style="justify-content:center; margin-top:8px;" onclick="closeModal('eftPosPayModal')">İşlemi İptal Et</button>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast-pill" id="globalToast"></div>
 
@@ -944,10 +1315,18 @@ pub fn get_pos_html() -> &'static str {
       const target = document.getElementById(`screen-${screenId}`);
       if (target) target.classList.add('active');
 
+      const btns = Array.from(document.querySelectorAll('.nav-seg-btn'));
+      const activeBtn = btns.find(b => b.getAttribute('onclick')?.includes(`'${screenId}'`));
+      if (activeBtn) activeBtn.classList.add('active');
+
       if (screenId === 'pos') document.getElementById('posBarcodeField').focus();
+      else if (screenId === 'transactions') loadTransactionsList();
       else if (screenId === 'products') loadProductsList();
       else if (screenId === 'stock') loadStockSessions();
       else if (screenId === 'customers') loadCustomersList();
+      else if (screenId === 'wastes') loadWasteList();
+      else if (screenId === 'labels') loadShelfLabels();
+      else if (screenId === 'cash') loadCashMovements();
       else if (screenId === 'reports') fetchAndDisplayZReport();
     }
 
@@ -1195,10 +1574,83 @@ pub fn get_pos_html() -> &'static str {
       executeCheckout('CASH', given, null);
     }
 
-    function checkoutCard() {
+    async function checkoutCard() {
       if (cart.length === 0) { showToast('Sepetiniz boş!', true); return; }
       const total = cart.reduce((a, b) => a + b.total, 0);
-      executeCheckout('CREDIT_CARD', total, null);
+
+      // EFT-POS Modalını hazırla
+      document.getElementById('eftPosAmountText').innerText = `${total.toFixed(2)} ₺`;
+      document.getElementById('eftPosStatusText').innerText = 'Kartınızı Okutunuz veya Şifrenizi Giriniz...';
+      document.getElementById('eftPosStatusText').style.color = 'var(--text-main)';
+      document.getElementById('eftPosSubtext').innerText = 'Cihazdan provizyon yanıtı bekleniyor';
+      document.getElementById('eftPosIcon').className = 'pulse-terminal';
+      document.getElementById('eftPosIcon').innerText = '💳';
+      document.getElementById('eftPosDetails').style.display = 'none';
+      document.getElementById('eftPosCancelBtn').style.display = 'block';
+
+      try {
+        const cfgRes = await fetch('/api/terminal/config');
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          document.getElementById('eftPosDeviceLabel').innerText = cfg.mode === 'BEKO_TCP'
+            ? `Beko GMP3 Terminali (${cfg.host}:${cfg.port})`
+            : '🧪 Sanal POS Simülatörü (Test Modu)';
+        }
+      } catch (e) {}
+
+      openModal('eftPosPayModal');
+
+      // Ödeme İsteği Gönder
+      try {
+        const payRes = await fetch('/api/terminal/pay', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            txn_type: 'SALE',
+            order_ref: `POS-${Date.now()}`,
+            print_slip: true
+          })
+        });
+
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          if (payData.is_approved) {
+            document.getElementById('eftPosIcon').className = '';
+            document.getElementById('eftPosIcon').innerText = '✅';
+            document.getElementById('eftPosStatusText').innerText = 'ÖDEME ONAYLANDI!';
+            document.getElementById('eftPosStatusText').style.color = 'var(--apple-green)';
+            document.getElementById('eftPosSubtext').innerText = 'Banka provizyonu başarılı, fiş basılıyor...';
+            document.getElementById('eftPosCancelBtn').style.display = 'none';
+
+            const details = document.getElementById('eftPosDetails');
+            details.style.display = 'block';
+            details.innerHTML = `
+              <div><b>Onay Kodu (Auth):</b> ${payData.auth_code}</div>
+              <div><b>RRN Referans:</b> ${payData.rrn}</div>
+              <div><b>Kart:</b> ${payData.card_masked} (${payData.card_brand})</div>
+              <div><b>Terminal ID:</b> ${payData.terminal_id}</div>
+            `;
+
+            setTimeout(async () => {
+              closeModal('eftPosPayModal');
+              await executeCheckout('CREDIT_CARD', total, null);
+            }, 1200);
+            return;
+          } else {
+            throw new Error(payData.error_message || 'İşlem reddedildi');
+          }
+        } else {
+          const errText = await payRes.text();
+          throw new Error(errText || 'Terminal bağlantı hatası');
+        }
+      } catch (err) {
+        document.getElementById('eftPosIcon').className = '';
+        document.getElementById('eftPosIcon').innerText = '❌';
+        document.getElementById('eftPosStatusText').innerText = 'İŞLEM BAŞARISIZ!';
+        document.getElementById('eftPosStatusText').style.color = 'var(--apple-red)';
+        document.getElementById('eftPosSubtext').innerText = err.message || 'Cihazdan provizyon alınamadı.';
+      }
     }
 
     async function executeCheckout(method, tender, customerId) {
@@ -1675,7 +2127,494 @@ pub fn get_pos_html() -> &'static str {
             `).join('')}
           </div>
         `;
-        showToast('📊 Z-Raporu hazırlandı ve yazıcıya yollandı');
+    // ==========================================================
+    // 1. İŞLEMLER & PARÇALI İADE LOGIC
+    // ==========================================================
+    let salesHistory = [];
+    let activeRefundSale = null;
+
+    async function loadTransactionsList() {
+      try {
+        const res = await fetch('/api/sales/history');
+        if (res.ok) {
+          salesHistory = await res.json();
+          renderTransactions(salesHistory);
+        }
+      } catch (e) {
+        showToast('İşlemler listelenemedi', true);
+      }
+    }
+
+    function renderTransactions(list) {
+      const tbody = document.getElementById('transactionsTableBody');
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">Kayıtlı satış işlemi bulunamadı.</td></tr>`;
+        return;
+      }
+
+      list.forEach(s => {
+        const tr = document.createElement('tr');
+        const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.quantity, 0) : 0;
+        const methodBadge = s.payment_method === 'CASH'
+          ? '<span style="color:var(--apple-green); font-weight:700;">Nakit</span>'
+          : (s.payment_method === 'CREDIT_CARD'
+             ? '<span style="color:var(--apple-blue); font-weight:700;">Kredi Kartı</span>'
+             : '<span style="color:var(--apple-amber); font-weight:700;">Veresiye</span>');
+
+        tr.innerHTML = `
+          <td><span style="font-family:monospace; font-weight:700; color:#38bdf8;">${s.receipt_no}</span></td>
+          <td style="color:var(--text-muted);">${new Date(s.created_at).toLocaleString('tr-TR')}</td>
+          <td>${methodBadge}</td>
+          <td><b>${s.grand_total.toFixed(2)} ₺</b></td>
+          <td>${itemCount.toFixed(itemCount % 1 === 0 ? 0 : 2)} Kalem</td>
+          <td><span class="pill-badge" style="display:inline-flex;">Tamamlandı</span></td>
+          <td style="text-align:right;">
+            <button class="btn-top-action" onclick="openRefundModal('${s.id}')">🔄 Kalem İade Et</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function filterTransactions() {
+      const q = (document.getElementById('transactionsSearch').value || '').toLowerCase();
+      const filtered = salesHistory.filter(s =>
+        (s.receipt_no && s.receipt_no.toLowerCase().includes(q)) ||
+        (s.created_at && s.created_at.toLowerCase().includes(q))
+      );
+      renderTransactions(filtered);
+    }
+
+    function openRefundModal(saleId) {
+      const sale = salesHistory.find(s => s.id === saleId);
+      if (!sale) return;
+      activeRefundSale = sale;
+
+      document.getElementById('refundModalReceiptNo').innerText = sale.receipt_no;
+      document.getElementById('refundModalOriginalTotal').innerText = `${sale.grand_total.toFixed(2)} ₺`;
+
+      const listDiv = document.getElementById('refundItemsList');
+      listDiv.innerHTML = '';
+
+      sale.items.forEach((item, idx) => {
+        const itemRow = document.createElement('div');
+        itemRow.style = 'background:var(--bg-card); padding:10px 14px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;';
+        itemRow.innerHTML = `
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="refundChk_${idx}" style="transform:scale(1.2); cursor:pointer;" onchange="calculateRefundTotal()">
+            <div>
+              <div style="font-weight:700; font-size:13px;">${item.name}</div>
+              <div style="font-size:11px; color:var(--text-muted);">${item.unit_price.toFixed(2)} ₺ / ${item.unit} (Satılan: ${item.quantity})</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:12px; color:var(--text-muted);">İade Adedi:</span>
+            <input type="number" id="refundQty_${idx}" class="form-input" style="width:75px; padding:4px 8px; text-align:center; font-weight:700;" value="${item.quantity}" min="0.01" max="${item.quantity}" step="${item.is_weighed ? '0.05' : '1'}" oninput="calculateRefundTotal()">
+          </div>
+        `;
+        listDiv.appendChild(itemRow);
+      });
+
+      calculateRefundTotal();
+      openModal('refundModal');
+    }
+
+    function calculateRefundTotal() {
+      if (!activeRefundSale) return;
+      let total = 0;
+      activeRefundSale.items.forEach((item, idx) => {
+        const chk = document.getElementById(`refundChk_${idx}`);
+        const qtyInput = document.getElementById(`refundQty_${idx}`);
+        if (chk && chk.checked && qtyInput) {
+          const qty = parseFloat(qtyInput.value) || 0;
+          total += qty * item.unit_price;
+        }
+      });
+      document.getElementById('refundTotalAmountText').innerText = `${total.toFixed(2)} ₺`;
+    }
+
+    async function confirmItemRefund() {
+      if (!activeRefundSale) return;
+      const refundItems = [];
+      let totalRefund = 0;
+
+      activeRefundSale.items.forEach((item, idx) => {
+        const chk = document.getElementById(`refundChk_${idx}`);
+        const qtyInput = document.getElementById(`refundQty_${idx}`);
+        if (chk && chk.checked && qtyInput) {
+          const qty = parseFloat(qtyInput.value) || 0;
+          if (qty > 0) {
+            const itemTotal = qty * item.unit_price;
+            totalRefund += itemTotal;
+            refundItems.push({
+              product_id: item.product_id,
+              barcode: item.barcode,
+              name: item.name,
+              unit_price: item.unit_price,
+              quantity: qty,
+              unit: item.unit,
+              total: itemTotal
+            });
+          }
+        }
+      });
+
+      if (refundItems.length === 0) {
+        showToast('Lütfen en az bir ürün seçiniz!', true);
+        return;
+      }
+
+      const reason = document.getElementById('refundReasonSelect').value;
+
+      try {
+        const res = await fetch('/api/sales/refund', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sale_id: activeRefundSale.id,
+            items: refundItems,
+            refund_amount: totalRefund,
+            reason: reason
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          showToast(`✅ İade tamamlandı! İade Tutarı: ${data.refunded_amount.toFixed(2)} ₺`);
+          closeModal('refundModal');
+          loadTransactionsList();
+          loadProductsList();
+          fetchStatus();
+        } else {
+          const err = await res.text();
+          showToast(`İade başarısız: ${err}`, true);
+        }
+      } catch (e) {
+        showToast('İade isteği gönderilemedi', true);
+      }
+    }
+
+    // ==========================================================
+    // 2. FİRE / ZAYİ TAKİBİ LOGIC
+    // ==========================================================
+    async function loadWasteList() {
+      try {
+        const res = await fetch('/api/waste');
+        if (res.ok) {
+          const list = await res.json();
+          renderWasteTable(list);
+        }
+      } catch (e) {
+        showToast('Fire listesi alınamadı', true);
+      }
+    }
+
+    function renderWasteTable(list) {
+      const tbody = document.getElementById('wasteTableBody');
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">Kayıtlı fire/zayi bulunmamaktadır.</td></tr>`;
+        return;
+      }
+
+      list.forEach(w => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:var(--text-muted);">${new Date(w.recorded_at).toLocaleString('tr-TR')}</td>
+          <td><b>${w.product_name}</b></td>
+          <td><span style="font-family:monospace; color:var(--apple-blue);">${w.barcode}</span></td>
+          <td>${w.quantity} ${w.unit}</td>
+          <td><span style="color:var(--apple-red); font-weight:700;">-${w.cost_loss.toFixed(2)} ₺</span></td>
+          <td><span class="pill-badge" style="color:var(--apple-amber);">${w.reason}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openNewWasteModal() {
+      document.getElementById('wasteBarcode').value = '';
+      document.getElementById('wasteQuantity').value = '1';
+      document.getElementById('wasteProductInfo').innerText = '';
+      openModal('newWasteModal');
+    }
+
+    async function lookupWasteProduct() {
+      const code = document.getElementById('wasteBarcode').value.trim();
+      if (!code) return;
+      try {
+        const res = await fetch('/api/barcode/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barcode: code })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.found && data.product) {
+            document.getElementById('wasteProductInfo').innerText = `✓ Bulundu: ${data.product.name} (Stok: ${data.product.stock_qty} ${data.product.unit})`;
+          } else {
+            document.getElementById('wasteProductInfo').innerText = '⚠️ Ürün bulunamadı';
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function saveWasteRecord() {
+      const barcode = document.getElementById('wasteBarcode').value.trim();
+      const qty = parseFloat(document.getElementById('wasteQuantity').value) || 0;
+      const reason = document.getElementById('wasteReason').value;
+
+      if (!barcode || qty <= 0) {
+        showToast('Lütfen geçerli barkod ve miktar giriniz!', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/waste', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            barcode: barcode,
+            quantity: qty,
+            reason: reason
+          })
+        });
+
+        if (res.ok) {
+          const record = await res.json();
+          showToast(`🗑️ Fire kaydedildi (${record.product_name}) ve stoktan düşüldü!`);
+          closeModal('newWasteModal');
+          loadWasteList();
+          loadProductsList();
+        } else {
+          const err = await res.text();
+          showToast(`Hata: ${err}`, true);
+        }
+      } catch (e) {
+        showToast('Fire kaydı başarısız', true);
+      }
+    }
+
+    // ==========================================================
+    // 3. RAF ETİKETLERİ LOGIC
+    // ==========================================================
+    async function loadShelfLabels() {
+      try {
+        const res = await fetch('/api/labels');
+        if (res.ok) {
+          const labels = await res.json();
+          renderShelfLabels(labels);
+        }
+      } catch (e) {
+        showToast('Etiketler yüklenemedi', true);
+      }
+    }
+
+    function renderShelfLabels(labels) {
+      const grid = document.getElementById('shelfLabelsGrid');
+      grid.innerHTML = '';
+      if (!labels || labels.length === 0) {
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:32px;">Kayıtlı ürün etiketi bulunamadı.</div>';
+        return;
+      }
+
+      labels.forEach(l => {
+        const card = document.createElement('div');
+        card.className = 'shelf-label-card';
+        const whole = Math.floor(l.price);
+        const kurus = Math.round((l.price - whole) * 100).toString().padStart(2, '0');
+
+        card.innerHTML = `
+          <div>
+            <div class="shelf-card-header">
+              <span class="shelf-badge-origin">🇹🇷 YERLİ ÜRETİM</span>
+              <span style="font-size:10px; font-weight:700; color:#64748b;">KDV %${l.vat_rate.toFixed(0)} DAHİL</span>
+            </div>
+            <div class="shelf-prod-name">${l.name}</div>
+            <div style="font-size:11px; color:#64748b; font-weight:600; margin-top:2px;">Kategori: ${l.category}</div>
+          </div>
+
+          <div class="shelf-price-row">
+            <div>
+              <span class="shelf-price-main">${whole}<span style="font-size:22px;">,${kurus}</span> ₺</span>
+            </div>
+            <div class="shelf-price-unit">Birim: ${l.unit}</div>
+          </div>
+
+          <div class="shelf-barcode-box">
+            <div class="shelf-barcode-bars">|||||| | |||| | ||||||</div>
+            <div class="shelf-barcode-num">${l.barcode}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ==========================================================
+    // 4. KASA HAREKETLERİ (AVANS & MASRAF)
+    // ==========================================================
+    async function loadCashMovements() {
+      try {
+        const res = await fetch('/api/cash/movements');
+        if (res.ok) {
+          const movements = await res.json();
+          renderCashMovements(movements);
+        }
+      } catch (e) {
+        showToast('Kasa hareketleri alınamadı', true);
+      }
+    }
+
+    function renderCashMovements(list) {
+      const tbody = document.getElementById('cashMovementsTableBody');
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">Henüz bir kasa hareketi kaydedilmedi.</td></tr>`;
+        return;
+      }
+
+      list.forEach(m => {
+        const tr = document.createElement('tr');
+        const isEntry = m.movement_type === 'IN';
+        tr.innerHTML = `
+          <td style="color:var(--text-muted);">${new Date(m.created_at).toLocaleString('tr-TR')}</td>
+          <td>
+            <span class="pill-badge" style="color:${isEntry ? 'var(--apple-green)' : 'var(--apple-red)'};">
+              ${isEntry ? '🟢 Kasa Giriş / Avans' : '🔴 Kasa Çıkış / Masraf'}
+            </span>
+          </td>
+          <td><b>${isEntry ? '+' : '-'}${m.amount.toFixed(2)} ₺</b></td>
+          <td>${m.reason}</td>
+          <td><span style="font-size:12px; color:var(--text-muted);">${m.register_id} (${m.cashier_name})</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openCashMovementModal(type) {
+      document.getElementById('cashMovementType').value = type;
+      document.getElementById('cashMovementAmount').value = '';
+      document.getElementById('cashMovementReason').value = '';
+      const heading = document.getElementById('cashMovementHeading');
+      const submitBtn = document.getElementById('btnSubmitCashMovement');
+
+      if (type === 'IN') {
+        heading.innerText = '🟢 Kasa Avansı & Nakit Girişi';
+        submitBtn.innerText = 'AVANSI KAYDET';
+        submitBtn.className = 'btn-checkout btn-cash';
+      } else {
+        heading.innerText = '🔴 Dükkan Masrafı & Nakit Çıkışı';
+        submitBtn.innerText = 'MASRAFI KAYDET';
+        submitBtn.className = 'btn-checkout btn-danger';
+      }
+
+      openModal('cashMovementModal');
+    }
+
+    async function submitCashMovement() {
+      const type = document.getElementById('cashMovementType').value;
+      const amount = parseFloat(document.getElementById('cashMovementAmount').value) || 0;
+      const reason = document.getElementById('cashMovementReason').value.trim();
+
+      if (amount <= 0 || !reason) {
+        showToast('Lütfen geçerli tutar ve açıklama giriniz!', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/cash/movements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            movement_type: type,
+            amount: amount,
+            reason: reason
+          })
+        });
+
+        if (res.ok) {
+          showToast(`💵 Kasa hareketi başarıyla işlendi (${amount.toFixed(2)} ₺)`);
+          closeModal('cashMovementModal');
+          loadCashMovements();
+        } else {
+          showToast('Kasa hareketi kaydedilemedi', true);
+        }
+      } catch (e) {
+        showToast('İstek hatası', true);
+      }
+    }
+
+    // ==========================================================
+    // 5. BEKO ÖKC & POS CİHAZI AYARLARI
+    // ==========================================================
+    async function openTerminalConfigModal() {
+      try {
+        const res = await fetch('/api/terminal/config');
+        if (res.ok) {
+          const cfg = await res.json();
+          document.getElementById('terminalMode').value = cfg.mode || 'MOCK';
+          document.getElementById('terminalHost').value = cfg.host || '192.168.1.150';
+          document.getElementById('terminalPort').value = cfg.port || 9000;
+          document.getElementById('terminalTimeout').value = cfg.timeout_seconds || 45;
+          updateTerminalFieldsVisibility();
+        }
+      } catch (e) {}
+
+      document.getElementById('terminalTestStatus').innerText = '';
+      openModal('terminalConfigModal');
+    }
+
+    function updateTerminalFieldsVisibility() {
+      const mode = document.getElementById('terminalMode').value;
+      const netFields = document.getElementById('terminalNetworkFields');
+      netFields.style.display = mode === 'BEKO_TCP' ? 'flex' : 'none';
+    }
+
+    async function testTerminalConnection() {
+      const statusDiv = document.getElementById('terminalTestStatus');
+      statusDiv.innerHTML = '<span style="color:var(--apple-blue);">🔌 Cihaz bağlantısı sınanıyor...</span>';
+
+      try {
+        const res = await fetch('/api/terminal/test', { method: 'POST' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            statusDiv.innerHTML = `<span style="color:var(--apple-green);">✅ BAŞARILI: ${data.mode} erişilebilir ve hazır.</span>`;
+          } else {
+            statusDiv.innerHTML = `<span style="color:var(--apple-red);">⚠️ BAĞLANILAMADI: ${data.mode} yanıt vermedi. IP/Portu kontrol ediniz.</span>`;
+          }
+        }
+      } catch (e) {
+        statusDiv.innerHTML = '<span style="color:var(--apple-red);">Bağlantı testi sırasında hata oluştu.</span>';
+      }
+    }
+
+    async function saveTerminalConfig() {
+      const mode = document.getElementById('terminalMode').value;
+      const host = document.getElementById('terminalHost').value.trim() || '192.168.1.150';
+      const port = parseInt(document.getElementById('terminalPort').value) || 9000;
+      const timeout = parseInt(document.getElementById('terminalTimeout').value) || 45;
+
+      try {
+        const res = await fetch('/api/terminal/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: mode,
+            host: host,
+            port: port,
+            timeout_seconds: timeout
+          })
+        });
+
+        if (res.ok) {
+          showToast('✅ POS Cihazı yapılandırması güncellendi!');
+          closeModal('terminalConfigModal');
+        } else {
+          showToast('Ayarlar kaydedilemedi', true);
+        }
+      } catch (e) {
+        showToast('Ayarlar kaydedilemedi', true);
       }
     }
 

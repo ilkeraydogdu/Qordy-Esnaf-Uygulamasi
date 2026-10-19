@@ -4,6 +4,7 @@ mod models;
 mod server;
 mod storage;
 mod sync;
+mod terminal;
 mod ui;
 
 use anyhow::Result;
@@ -84,10 +85,14 @@ fn main() -> Result<()> {
 
     let (ws_tx, _ws_rx) = tokio::sync::broadcast::channel(100);
 
+    let terminal_config = terminal::TerminalConfig::default();
+    let terminal_mgr = terminal::TerminalManager::new(terminal_config);
+
     // Arka plan işçilerini async runtime içinde başlat
     let app_state = Arc::new(AppState {
         db: db.clone(),
         sync: sync_engine.clone(),
+        terminal_mgr: terminal_mgr.clone(),
         ws_tx,
     });
 

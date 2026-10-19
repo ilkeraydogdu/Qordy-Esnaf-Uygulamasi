@@ -215,3 +215,81 @@ pub struct CreateCustomerRequest {
     pub credit_limit: f64,
     pub note: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WasteRecord {
+    pub id: String,
+    pub product_id: String,
+    pub product_name: String,
+    pub barcode: String,
+    pub quantity: f64,
+    pub unit: String,
+    pub cost_loss: f64,
+    pub reason: String, // "BAYAT / SKT", "KIRILDI / HASAR", "ÇÜRÜME", "DİĞER"
+    pub recorded_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateWasteRequest {
+    pub barcode: String,
+    pub quantity: f64,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RefundItem {
+    pub product_id: String,
+    pub barcode: String,
+    pub name: String,
+    pub unit_price: f64,
+    pub quantity: f64,
+    pub unit: String,
+    pub total: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RefundRequest {
+    pub sale_id: String,
+    pub items: Vec<RefundItem>,
+    pub refund_amount: f64,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RefundResponse {
+    pub success: bool,
+    pub refund_id: String,
+    pub refund_receipt_no: String,
+    pub refunded_amount: f64,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashMovement {
+    pub id: String,
+    pub movement_type: String, // "IN" (Kasa Giriş / Avans) veya "OUT" (Kasa Çıkış / Masraf)
+    pub amount: f64,
+    pub reason: String,
+    pub register_id: String,
+    pub cashier_name: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCashMovementRequest {
+    pub movement_type: String,
+    pub amount: f64,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShelfLabel {
+    pub product_id: String,
+    pub barcode: String,
+    pub name: String,
+    pub price: f64,
+    pub unit: String,
+    pub vat_rate: f64,
+    pub category: String,
+}
+

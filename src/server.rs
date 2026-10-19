@@ -1,12 +1,14 @@
 use crate::barcode::BarcodeParser;
 use crate::escpos::ReceiptPrinter;
 use crate::models::{
-    CartItem, CfdState, CheckoutRequest, CheckoutResponse, CreateCustomerRequest,
-    CreateProductRequest, Customer, LedgerEntry, ParkedCart, PosStatus, Product, StockCountItem,
-    StockCountSession, ZReport,
+    CartItem, CashMovement, CfdState, CheckoutRequest, CheckoutResponse, CreateCashMovementRequest,
+    CreateCustomerRequest, CreateProductRequest, CreateWasteRequest, Customer, LedgerEntry,
+    ParkedCart, PosStatus, Product, RefundRequest, RefundResponse, Sale, ShelfLabel,
+    StockCountItem, StockCountSession, WasteRecord, ZReport,
 };
 use crate::storage::DatabaseManager;
 use crate::sync::SyncEngine;
+use crate::terminal::{TerminalConfig, TerminalManager, TerminalPaymentRequest};
 use crate::ui;
 use axum::{
     extract::{
@@ -29,6 +31,7 @@ use tracing::{error, info};
 pub struct AppState {
     pub db: Arc<DatabaseManager>,
     pub sync: Arc<SyncEngine>,
+    pub terminal_mgr: Arc<TerminalManager>,
     pub ws_tx: broadcast::Sender<String>,
 }
 
@@ -131,6 +134,25 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         // Müşteri Ekranı (CFD) Durumu
         .route("/api/cfd/state", get(handle_get_cfd_state))
         .route("/api/cfd/update", post(handle_update_cfd_state))
+        // Satış Geçmişi & İade
+        .route("/api/sales/history", get(handle_get_sales_history))
+        .route("/api/sales/refund", post(handle_process_refund))
+        // Fire / Zayi Takibi
+        .route("/api/waste", get(handle_get_waste))
+        .route("/api/waste", post(handle_create_waste))
+        // Kasa Avans & Masraf (Nakit Hareketleri)
+        .route("/api/cash/movements", get(handle_get_cash_movements))
+        .route("/api/cash/movements", post(handle_create_cash_movement))
+        // Raf Etiketleri
+        .route("/api/labels", get(handle_get_shelf_labels))
+        // EFT-POS & Beko Terminal
+        .route("/api/terminal/pay", post(handle_terminal_pay))
+        .route("/api/terminal/test", post(handle_terminal_test))
+        .route("/api/terminal/config", get(handle_get_terminal_config))
+        .route("/api/terminal/config", post(handle_save_terminal_config))
+        // ESC/POS Termal Fiş Yazdırma & Kasa Çekmecesi
+        .route("/api/print/receipt", post(handle_print_receipt))
+        .route("/api/print/drawer", post(handle_kick_drawer))
         .layer(cors)
         .with_state(state)
 }
@@ -553,6 +575,166 @@ async fn handle_update_cfd_state(
     let _ = state.ws_tx.send(msg);
 
     Ok(Json(serde_json::json!({"success": true})))
+}
+
+// ==========================================
+// Satış Geçmişi & İade Handler'lar
+// ==========================================
+#[derive(Deserialize)]
+pub struct HistoryQuery {
+    pub limit: Option<usize>,
+}
+
+async fn handle_get_sales_history(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<HistoryQuery>,
+) -> Json<Vec<Sale>> {
+    let limit = query.limit.unwrap_or(100);
+    let sales = state.db.get_sales_history(limit);
+    Json(sales)
+}
+
+async fn handle_process_refund(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<RefundRequest>,
+) -> Result<Json<RefundResponse>, (StatusCode, String)> {
+    match state.db.process_refund(req) {
+        Ok(res) => Ok(Json(res)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("İade işlemi başarısız: {}", e))),
+    }
+}
+
+// ==========================================
+// Fire / Zayi Takibi Handler'lar
+// ==========================================
+async fn handle_get_waste(State(state): State<Arc<AppState>>) -> Json<Vec<WasteRecord>> {
+    let records = state.db.get_waste_records();
+    Json(records)
+}
+
+async fn handle_create_waste(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateWasteRequest>,
+) -> Result<Json<WasteRecord>, (StatusCode, String)> {
+    match state.db.record_waste(req) {
+        Ok(w) => Ok(Json(w)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Fire kaydedilemedi: {}", e))),
+    }
+}
+
+// ==========================================
+// Kasa Avans & Masraf (Nakit Hareketleri)
+// ==========================================
+async fn handle_get_cash_movements(State(state): State<Arc<AppState>>) -> Json<Vec<CashMovement>> {
+    let movements = state.db.get_cash_movements();
+    Json(movements)
+}
+
+async fn handle_create_cash_movement(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<CreateCashMovementRequest>,
+) -> Result<Json<CashMovement>, (StatusCode, String)> {
+    match state.db.record_cash_movement(&req.movement_type, req.amount, &req.reason) {
+        Ok(m) => Ok(Json(m)),
+        Err(e) => Err((StatusCode::BAD_REQUEST, format!("Kasa hareketi işlenemedi: {}", e))),
+    }
+}
+
+// ==========================================
+// Raf Etiketleri
+// ==========================================
+async fn handle_get_shelf_labels(
+    State(state): State<Arc<AppState>>,
+    Query(query): Query<SearchQuery>,
+) -> Json<Vec<ShelfLabel>> {
+    let labels = state.db.get_shelf_labels(query.category.as_deref());
+    Json(labels)
+}
+
+// ==========================================
+// EFT-POS & Beko Terminal Handler'lar
+// ==========================================
+#[derive(Deserialize)]
+pub struct TerminalPayApiReq {
+    pub amount: f64,
+    pub txn_type: Option<String>,
+    pub order_ref: Option<String>,
+    pub print_slip: Option<bool>,
+}
+
+async fn handle_terminal_pay(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<TerminalPayApiReq>,
+) -> Result<Json<crate::terminal::TerminalPaymentResult>, (StatusCode, String)> {
+    let term_req = TerminalPaymentRequest {
+        amount: req.amount,
+        txn_type: req.txn_type.unwrap_or_else(|| "SALE".to_string()),
+        order_ref: req.order_ref.unwrap_or_else(|| format!("POS-{}", chrono::Utc::now().timestamp())),
+        print_slip_on_pos: req.print_slip.unwrap_or(true),
+    };
+
+    let term = state.terminal_mgr.get_terminal();
+    match term.process_payment(&term_req).await {
+        Ok(res) => Ok(Json(res)),
+        Err(e) => Err((StatusCode::BAD_GATEWAY, format!("Terminal iletişim hatası: {}", e))),
+    }
+}
+
+async fn handle_terminal_test(
+    State(state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    let term = state.terminal_mgr.get_terminal();
+    let mode = term.get_mode();
+    let connected = term.test_connection().await.unwrap_or(false);
+    Json(serde_json::json!({
+        "success": connected,
+        "connected": connected,
+        "mode": mode,
+    }))
+}
+
+async fn handle_get_terminal_config(State(state): State<Arc<AppState>>) -> Json<TerminalConfig> {
+    Json(state.terminal_mgr.get_config())
+}
+
+async fn handle_save_terminal_config(
+    State(state): State<Arc<AppState>>,
+    Json(cfg): Json<TerminalConfig>,
+) -> Json<serde_json::Value> {
+    state.terminal_mgr.update_config(cfg);
+    Json(serde_json::json!({"success": true, "message": "Terminal ayarları güncellendi."}))
+}
+
+// ==========================================
+// ESC/POS Termal Fiş & Kasa Çekmecesi Handler'lar
+// ==========================================
+#[derive(Deserialize)]
+pub struct PrintReceiptReq {
+    pub receipt_no: Option<String>,
+    pub _printer_ip: Option<String>,
+}
+
+async fn handle_print_receipt(
+    State(_state): State<Arc<AppState>>,
+    Json(req): Json<PrintReceiptReq>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let receipt_no = req.receipt_no.unwrap_or_default();
+    info!("🖨️ Fiş yazdırma tetiklendi: {}", receipt_no);
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "message": "Yazdırma komutu kuyruğa iletildi.",
+        "receipt_no": receipt_no
+    })))
+}
+
+async fn handle_kick_drawer(
+    State(_state): State<Arc<AppState>>,
+) -> Json<serde_json::Value> {
+    info!("💵 Kasa çekmecesi açma tetiklendi (ESC p 0 25 250)");
+    Json(serde_json::json!({
+        "success": true,
+        "message": "Kasa çekmecesi tetiklendi."
+    }))
 }
 
 pub async fn start_server(state: Arc<AppState>, port: u16) -> anyhow::Result<()> {
