@@ -79,6 +79,7 @@ impl EscPosBuilder {
         self
     }
 
+    #[allow(dead_code)]
     pub fn double_divider(&mut self, char_count: usize) -> &mut Self {
         let line = "=".repeat(char_count);
         self.text(&format!("{}\n", line));
@@ -140,6 +141,7 @@ pub fn sanitize_turkish_text(input: &str) -> String {
 
 pub struct ReceiptPrinter;
 
+#[allow(dead_code)]
 impl ReceiptPrinter {
     /// Perakende Satış Fişi Oluştur (80mm / 42 Karakter)
     pub fn build_sale_receipt(sale: &Sale) -> Vec<u8> {

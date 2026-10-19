@@ -1,3 +1,4 @@
+pub mod api;
 pub mod barcode;
 pub mod escpos;
 pub mod models;

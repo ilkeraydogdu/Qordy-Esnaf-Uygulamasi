@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QORDY Cadde Esnaf - Müşteri 2. Ekranı</title>
+  <link rel="stylesheet" href="/assets/css/customer.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">QORDY CADDE ESNAF</div>
+    <div id="clockDisplay" style="font-size:16px; font-weight:600; color:var(--muted);">--:--:--</div>
+  </header>
+
+  <main>
+    <div class="items-panel">
+      <div id="itemsContainer"></div>
+    </div>
+
+    <div class="summary-panel">
+      <div>
+        <div class="total-title">Toplam Tutar</div>
+        <div class="total-number" id="grandTotalDisplay">0.00 ₺</div>
+        <div style="font-size: 15px; color: var(--muted);" id="subtotalDisplay">Ara Toplam: 0.00 ₺</div>
+      </div>
+
+      <div style="text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5;">
+        Bizi tercih ettiğiniz için teşekkür ederiz.<br/>
+        <b>İyi Günler Dileriz!</b>
+      </div>
+    </div>
+
+    <!-- Boş / Bekleme Durumu -->
+    <div class="idle-view" id="idleView">
+      <div style="font-size: 64px;">👋</div>
+      <div class="idle-title">HOŞ GELDİNİZ</div>
+      <div class="idle-sub">Kasadaki işlemleriniz bu ekranda anlık olarak görüntülenecektir.</div>
+    </div>
+
+    <!-- Ödeme Başarılı Durumu -->
+    <div class="success-view" id="successView">
+      <div style="font-size: 72px;">✅</div>
+      <div style="font-size: 40px; font-weight: 800;">TEŞEKKÜR EDERİZ</div>
+      <div style="font-size: 24px; font-weight: 700;" id="successChangeText">Para Üstü: 0.00 ₺</div>
+      <div style="font-size: 16px; opacity: 0.8;">Fişinizi almayı unutmayınız.</div>
+    </div>
+  </main>
+
+  <script src="/assets/js/customer.js"></script>
+</body>
+</html>

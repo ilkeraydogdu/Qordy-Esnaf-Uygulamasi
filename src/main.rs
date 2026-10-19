@@ -1,3 +1,4 @@
+mod api;
 mod barcode;
 mod escpos;
 mod models;
