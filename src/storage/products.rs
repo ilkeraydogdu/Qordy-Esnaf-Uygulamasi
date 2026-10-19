@@ -19,23 +19,7 @@ impl DatabaseManager {
         let clean = barcode_or_lookup.trim();
 
         let product = stmt
-            .query_row(params![clean, clean.trim_start_matches('0')], |row| {
-                Ok(Product {
-                    id: row.get(0)?,
-                    tenant_id: row.get(1)?,
-                    barcode: row.get(2)?,
-                    name: row.get(3)?,
-                    category: row.get(4)?,
-                    price: row.get(5)?,
-                    vat_rate: row.get(6)?,
-                    stock_qty: row.get(7)?,
-                    unit: row.get(8)?,
-                    is_weighed: row.get::<_, i32>(9)? == 1,
-                    tare_grams: row.get(10)?,
-                    quick_order: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })
+            .query_row(params![clean, clean.trim_start_matches('0')], crate::storage::row_to_product)
             .ok();
 
         if product.is_some() {
@@ -47,23 +31,7 @@ impl DatabaseManager {
                        FROM barcodes b JOIN products p ON b.product_id = p.id WHERE b.barcode = ?1 LIMIT 1";
         let mut alt_stmt = conn.prepare(alt_sql).ok()?;
         alt_stmt
-            .query_row(params![clean], |row| {
-                Ok(Product {
-                    id: row.get(0)?,
-                    tenant_id: row.get(1)?,
-                    barcode: row.get(2)?,
-                    name: row.get(3)?,
-                    category: row.get(4)?,
-                    price: row.get(5)?,
-                    vat_rate: row.get(6)?,
-                    stock_qty: row.get(7)?,
-                    unit: row.get(8)?,
-                    is_weighed: row.get::<_, i32>(9)? == 1,
-                    tare_grams: row.get(10)?,
-                    quick_order: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })
+            .query_row(params![clean], crate::storage::row_to_product)
             .ok()
     }
 
@@ -74,24 +42,8 @@ impl DatabaseManager {
         let sql = "SELECT id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at
                    FROM products WHERE id = ?1 LIMIT 1";
         let mut stmt = conn.prepare(sql).ok()?;
-        stmt.query_row(params![id], |row| {
-            Ok(Product {
-                id: row.get(0)?,
-                tenant_id: row.get(1)?,
-                barcode: row.get(2)?,
-                name: row.get(3)?,
-                category: row.get(4)?,
-                price: row.get(5)?,
-                vat_rate: row.get(6)?,
-                stock_qty: row.get(7)?,
-                unit: row.get(8)?,
-                is_weighed: row.get::<_, i32>(9)? == 1,
-                tare_grams: row.get(10)?,
-                quick_order: row.get(11)?,
-                updated_at: row.get(12)?,
-            })
-        })
-        .ok()
+        stmt.query_row(params![id], crate::storage::row_to_product)
+            .ok()
     }
 
     /// Sık Satılan Hızlı Buton Ürünleri
@@ -105,23 +57,7 @@ impl DatabaseManager {
             Err(_) => return Vec::new(),
         };
 
-        let rows = stmt.query_map([], |row| {
-            Ok(Product {
-                id: row.get(0)?,
-                tenant_id: row.get(1)?,
-                barcode: row.get(2)?,
-                name: row.get(3)?,
-                category: row.get(4)?,
-                price: row.get(5)?,
-                vat_rate: row.get(6)?,
-                stock_qty: row.get(7)?,
-                unit: row.get(8)?,
-                is_weighed: row.get::<_, i32>(9)? == 1,
-                tare_grams: row.get(10)?,
-                quick_order: row.get(11)?,
-                updated_at: row.get(12)?,
-            })
-        });
+        let rows = stmt.query_map([], crate::storage::row_to_product);
 
         match rows {
             Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
@@ -141,23 +77,7 @@ impl DatabaseManager {
             Err(_) => return Vec::new(),
         };
 
-        let rows = stmt.query_map(params![pattern], |row| {
-            Ok(Product {
-                id: row.get(0)?,
-                tenant_id: row.get(1)?,
-                barcode: row.get(2)?,
-                name: row.get(3)?,
-                category: row.get(4)?,
-                price: row.get(5)?,
-                vat_rate: row.get(6)?,
-                stock_qty: row.get(7)?,
-                unit: row.get(8)?,
-                is_weighed: row.get::<_, i32>(9)? == 1,
-                tare_grams: row.get(10)?,
-                quick_order: row.get(11)?,
-                updated_at: row.get(12)?,
-            })
-        });
+        let rows = stmt.query_map(params![pattern], crate::storage::row_to_product);
 
         match rows {
             Ok(iter) => iter.filter_map(|r| r.ok()).collect(),
@@ -188,28 +108,10 @@ impl DatabaseManager {
             Err(_) => return Vec::new(),
         };
 
-        let map_row = |row: &rusqlite::Row| {
-            Ok(Product {
-                id: row.get(0)?,
-                tenant_id: row.get(1)?,
-                barcode: row.get(2)?,
-                name: row.get(3)?,
-                category: row.get(4)?,
-                price: row.get(5)?,
-                vat_rate: row.get(6)?,
-                stock_qty: row.get(7)?,
-                unit: row.get(8)?,
-                is_weighed: row.get::<_, i32>(9)? == 1,
-                tare_grams: row.get(10)?,
-                quick_order: row.get(11)?,
-                updated_at: row.get(12)?,
-            })
-        };
-
         let rows = if let Some(cat) = filter_param {
-            stmt.query_map(params![cat], map_row)
+            stmt.query_map(params![cat], crate::storage::row_to_product)
         } else {
-            stmt.query_map([], map_row)
+            stmt.query_map([], crate::storage::row_to_product)
         };
 
         match rows {
@@ -223,7 +125,7 @@ impl DatabaseManager {
         let conn = self.conn.lock();
         let now = Local::now().to_rfc3339();
         let id = format!("PRD-{}", &Uuid::new_v4().to_string()[0..8].to_uppercase());
-        let tenant_id = "CUST_69653cfccb839";
+        let tenant_id = &self.config.tenant_id;
 
         conn.execute(
             "INSERT INTO products (id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at)
@@ -265,6 +167,7 @@ impl DatabaseManager {
     pub fn update_product(&self, id: &str, req: CreateProductRequest) -> Result<Product> {
         let conn = self.conn.lock();
         let now = Local::now().to_rfc3339();
+        let tenant_id = &self.config.tenant_id;
 
         conn.execute(
             "UPDATE products SET barcode = ?1, name = ?2, category = ?3, price = ?4, vat_rate = ?5, stock_qty = ?6, unit = ?7, is_weighed = ?8, quick_order = ?9, updated_at = ?10
@@ -286,7 +189,7 @@ impl DatabaseManager {
 
         Ok(Product {
             id: id.to_string(),
-            tenant_id: "CUST_69653cfccb839".to_string(),
+            tenant_id: tenant_id.to_string(),
             barcode: req.barcode,
             name: req.name,
             category: req.category,

@@ -43,7 +43,7 @@ impl DatabaseManager {
         let conn = self.conn.lock();
         let now = Local::now().to_rfc3339();
         let id = format!("CUST-{}", &Uuid::new_v4().to_string()[0..8].to_uppercase());
-        let tenant_id = "CUST_69653cfccb839";
+        let tenant_id = &self.config.tenant_id;
 
         conn.execute(
             "INSERT INTO customers (id, tenant_id, name, phone, balance, credit_limit, note, updated_at)
@@ -53,7 +53,7 @@ impl DatabaseManager {
 
         Ok(Customer {
             id,
-            tenant_id: tenant_id.to_string(),
+            tenant_id: tenant_id.clone(),
             name: req.name,
             phone: req.phone,
             balance: 0.0,

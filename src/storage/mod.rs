@@ -1,31 +1,140 @@
 //! QORDY POS - Enterprise SQLite Storage Architecture
 //! WAL-mode, offline-first transactional storage engine with outbox pattern.
 
+pub mod campaigns;
 pub mod cash;
+pub mod catalog;
 pub mod cfd;
 pub mod customers;
 pub mod labels;
 pub mod outbox;
 pub mod products;
+pub mod receiving;
+pub mod registers;
 pub mod reports;
 pub mod sales;
 pub mod stock_count;
+pub mod transfers;
 pub mod waste;
 
+use crate::config::AppConfig;
+use crate::models::{CartItem, Customer, LedgerEntry, Product, Sale};
 use anyhow::Result;
 use chrono::Local;
 use parking_lot::Mutex;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Row};
 use std::path::Path;
 use std::sync::Arc;
 use tracing::info;
 
+// ---------------------------------------------------------------------------
+// Shared row-mapping helpers — eliminates duplicated field-by-field mapping
+// across products.rs, customers.rs, sales.rs, etc.
+// ---------------------------------------------------------------------------
+
+pub(crate) fn row_to_product(row: &Row) -> rusqlite::Result<Product> {
+    Ok(Product {
+        id: row.get(0)?,
+        tenant_id: row.get(1)?,
+        barcode: row.get(2)?,
+        name: row.get(3)?,
+        category: row.get(4)?,
+        price: row.get(5)?,
+        vat_rate: row.get(6)?,
+        stock_qty: row.get(7)?,
+        unit: row.get(8)?,
+        is_weighed: row.get::<_, i32>(9)? == 1,
+        tare_grams: row.get(10)?,
+        quick_order: row.get(11)?,
+        updated_at: row.get(12)?,
+    })
+}
+
+#[allow(dead_code)]
+pub(crate) fn row_to_customer(row: &Row) -> rusqlite::Result<Customer> {
+    Ok(Customer {
+        id: row.get(0)?,
+        tenant_id: row.get(1)?,
+        name: row.get(2)?,
+        phone: row.get(3)?,
+        balance: row.get(4)?,
+        credit_limit: row.get(5)?,
+        note: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
+}
+
+#[allow(dead_code)]
+pub(crate) fn row_to_ledger_entry(row: &Row) -> rusqlite::Result<LedgerEntry> {
+    Ok(LedgerEntry {
+        id: row.get(0)?,
+        tenant_id: row.get(1)?,
+        customer_id: row.get(2)?,
+        customer_name: row.get(3)?,
+        entry_type: row.get(4)?,
+        amount: row.get(5)?,
+        balance_after: row.get(6)?,
+        note: row.get(7)?,
+        created_at: row.get(8)?,
+        sync_status: row.get(9)?,
+    })
+}
+
+#[allow(dead_code)]
+pub(crate) fn row_to_sale(row: &Row) -> rusqlite::Result<Sale> {
+    Ok(Sale {
+        id: row.get(0)?,
+        receipt_no: row.get(1)?,
+        tenant_id: row.get(2)?,
+        branch_id: row.get(3)?,
+        branch_name: row.get(4)?,
+        register_id: row.get(5)?,
+        cashier_id: row.get(6)?,
+        cashier_name: row.get(7)?,
+        subtotal: row.get(8)?,
+        vat_amount: row.get(9)?,
+        discount_amount: row.get(10)?,
+        grand_total: row.get(11)?,
+        payment_method: row.get(12)?,
+        customer_id: row.get(13)?,
+        customer_name: row.get(14)?,
+        tender_amount: row.get(15)?,
+        change_amount: row.get(16)?,
+        items: Vec::new(),
+        created_at: row.get(17)?,
+        sync_status: row.get(18)?,
+    })
+}
+
+#[allow(dead_code)]
+pub(crate) fn row_to_cart_item(row: &Row) -> rusqlite::Result<CartItem> {
+    Ok(CartItem {
+        product_id: row.get(0)?,
+        barcode: row.get(1)?,
+        name: row.get(2)?,
+        unit_price: row.get(3)?,
+        quantity: row.get(4)?,
+        unit: row.get(5)?,
+        vat_rate: row.get(6)?,
+        discount: row.get(7)?,
+        total: row.get(8)?,
+        is_weighed: row.get::<_, i32>(9)? == 1,
+        notes: row.get(10)?,
+    })
+}
+
 pub struct DatabaseManager {
-    pub(crate) conn: Mutex<Connection>,
+    pub(crate) conn: Arc<Mutex<Connection>>,
+    pub(crate) config: AppConfig,
 }
 
 impl DatabaseManager {
+    #[allow(dead_code)]
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Arc<Self>> {
+        Self::new_with_config(path, &AppConfig::default())
+    }
+
+    pub fn new_with_config<P: AsRef<Path>>(path: P, config: &AppConfig) -> Result<Arc<Self>> {
         let conn = Connection::open(path)?;
 
         // WAL (Write-Ahead Logging) modu: eşzamanlı okuma/yazma performansı ve veri kaybı koruması
@@ -37,7 +146,8 @@ impl DatabaseManager {
         )?;
 
         let db = Arc::new(Self {
-            conn: Mutex::new(conn),
+            conn: Arc::new(Mutex::new(conn)),
+            config: config.clone(),
         });
 
         db.init_schema()?;
@@ -48,9 +158,15 @@ impl DatabaseManager {
 
     #[allow(dead_code)]
     pub fn new_in_memory() -> Result<Arc<Self>> {
+        Self::new_in_memory_with_config(&AppConfig::default())
+    }
+
+    #[allow(dead_code)]
+    pub fn new_in_memory_with_config(config: &AppConfig) -> Result<Arc<Self>> {
         let conn = Connection::open_in_memory()?;
         let db = Arc::new(Self {
-            conn: Mutex::new(conn),
+            conn: Arc::new(Mutex::new(conn)),
+            config: config.clone(),
         });
         db.init_schema()?;
         db.seed_initial_data_if_empty()?;
@@ -269,6 +385,135 @@ impl DatabaseManager {
                 cashier_name TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
+
+            -- Tedarikçiler
+            CREATE TABLE IF NOT EXISTS suppliers (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                contact_name TEXT,
+                phone TEXT,
+                email TEXT,
+                address TEXT,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_suppliers_name ON suppliers(name);
+
+            -- Mal Kabul & Alış İrsaliyeleri
+            CREATE TABLE IF NOT EXISTS goods_receipts (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                branch_id TEXT NOT NULL,
+                supplier_id TEXT NOT NULL,
+                supplier_name TEXT NOT NULL,
+                invoice_no TEXT NOT NULL,
+                receipt_date TEXT NOT NULL,
+                total_amount REAL NOT NULL,
+                notes TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            -- Mal Kabul Kalemleri
+            CREATE TABLE IF NOT EXISTS goods_receipt_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                receipt_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                barcode TEXT NOT NULL,
+                name TEXT NOT NULL,
+                quantity REAL NOT NULL,
+                unit TEXT NOT NULL,
+                cost_price REAL NOT NULL,
+                sale_price REAL NOT NULL,
+                total_cost REAL NOT NULL,
+                FOREIGN KEY (receipt_id) REFERENCES goods_receipts(id) ON DELETE CASCADE
+            );
+
+            -- Kampanyalar & İndirimler
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                campaign_type TEXT NOT NULL,
+                discount_percent REAL,
+                discount_amount REAL,
+                min_cart_amount REAL,
+                buy_qty INTEGER,
+                pay_qty INTEGER,
+                target_product_id TEXT,
+                target_category TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL
+            );
+
+            -- Şubeler
+            CREATE TABLE IF NOT EXISTS branches (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                code TEXT,
+                address TEXT,
+                phone TEXT,
+                is_active INTEGER NOT NULL DEFAULT 1
+            );
+
+            -- Şubeler Arası Mal Transferleri
+            CREATE TABLE IF NOT EXISTS stock_transfers (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                from_branch_id TEXT NOT NULL,
+                from_branch_name TEXT NOT NULL,
+                to_branch_id TEXT NOT NULL,
+                to_branch_name TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'DRAFT',
+                notes TEXT,
+                created_by TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                received_at TEXT
+            );
+
+            -- Transfer Kalemleri
+            CREATE TABLE IF NOT EXISTS stock_transfer_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transfer_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                barcode TEXT NOT NULL,
+                name TEXT NOT NULL,
+                quantity REAL NOT NULL,
+                unit TEXT NOT NULL,
+                received_quantity REAL NOT NULL DEFAULT 0.0,
+                FOREIGN KEY (transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE
+            );
+
+            -- Kasa Vardiyaları & Çekmece Devri
+            CREATE TABLE IF NOT EXISTS register_shifts (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                branch_id TEXT NOT NULL,
+                register_name TEXT NOT NULL,
+                cashier_name TEXT NOT NULL,
+                opening_cash REAL NOT NULL DEFAULT 0.0,
+                closing_cash REAL,
+                expected_cash REAL,
+                cash_difference REAL,
+                notes TEXT,
+                status TEXT NOT NULL DEFAULT 'OPEN',
+                opened_at TEXT NOT NULL,
+                closed_at TEXT
+            );
+
+            -- 4.13 Milyon Ulusal Barkod Kataloğu Önbelleği
+            CREATE TABLE IF NOT EXISTS national_catalog_cache (
+                barcode TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                brand TEXT,
+                category TEXT,
+                vat_rate REAL,
+                unit TEXT,
+                is_weighed INTEGER DEFAULT 0,
+                plu_code TEXT,
+                suggested_price REAL
+            );
+            CREATE INDEX IF NOT EXISTS idx_national_name ON national_catalog_cache(name);
             ",
         )?;
 
@@ -301,11 +546,12 @@ impl DatabaseManager {
         ];
 
         let now = Local::now().to_rfc3339();
+        let tenant_id = &self.config.tenant_id;
         for (id, barcode, name, cat, price, vat, stock, unit, weighed, tare, quick) in sample_products {
             conn.execute(
                 "INSERT INTO products (id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at)
-                 VALUES (?1, 'CUST_69653cfccb839', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
-                params![id, barcode, name, cat, price, vat, stock, unit, weighed, tare, quick, now],
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+                params![id, tenant_id, barcode, name, cat, price, vat, stock, unit, weighed, tare, quick, now],
             )?;
         }
 
@@ -318,20 +564,20 @@ impl DatabaseManager {
         for (id, name, phone, balance, limit, note) in sample_customers {
             conn.execute(
                 "INSERT INTO customers (id, tenant_id, name, phone, balance, credit_limit, note, updated_at)
-                 VALUES (?1, 'CUST_69653cfccb839', ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![id, name, phone, balance, limit, note, now],
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                params![id, tenant_id, name, phone, balance, limit, note, now],
             )?;
         }
 
         let default_configs = vec![
-            ("tenant_id", "CUST_69653cfccb839"),
-            ("business_name", "QORDY Cadde Esnaf"),
-            ("branch_id", "BR_01"),
-            ("branch_name", "Kadıköy Çarşı Şubesi"),
-            ("register_id", "KASA-01"),
-            ("cashier_name", "Ahmet Kasiyer"),
-            ("cloud_api_url", "https://qordy.com/api/retail"),
-            ("api_key", "42ac390b9f93aa624d7ed72b6ca603e408a9de3d8f859218c157019db3ff6700"),
+            ("tenant_id", self.config.tenant_id.as_str()),
+            ("business_name", self.config.business_name.as_str()),
+            ("branch_id", self.config.branch_id.as_str()),
+            ("branch_name", self.config.branch_name.as_str()),
+            ("register_id", self.config.register_id.as_str()),
+            ("cashier_name", self.config.cashier_name.as_str()),
+            ("cloud_api_url", self.config.cloud_url.as_str()),
+            ("api_key", self.config.api_key.as_str()),
         ];
 
         for (k, v) in default_configs {

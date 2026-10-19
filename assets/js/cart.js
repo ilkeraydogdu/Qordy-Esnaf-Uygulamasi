@@ -1,6 +1,8 @@
 // QORDY POS - Reactive Shopping Cart Manager
 const Cart = {
   items: [],
+  appliedCampaignCode: null,
+  discountAmount: 0.0,
 
   init() {
     this.render();
@@ -10,8 +12,35 @@ const Cart = {
     return this.items;
   },
 
-  getTotal() {
+  getSubtotal() {
     return this.items.reduce((acc, i) => acc + i.total, 0);
+  },
+
+  getTotal() {
+    const sub = this.getSubtotal();
+    return Math.max(0, sub - this.discountAmount);
+  },
+
+  async applyCampaign(code) {
+    if (!code || this.items.length === 0) return { success: false, message: 'Sepet boş veya geçersiz kod' };
+    try {
+      const res = await Api.calculateCampaignDiscount(code, this.getSubtotal(), this.items);
+      this.appliedCampaignCode = code;
+      this.discountAmount = res.discount_amount || 0;
+      this.render();
+      return { success: true, discount: this.discountAmount, campaign: res.campaign };
+    } catch (e) {
+      this.appliedCampaignCode = null;
+      this.discountAmount = 0.0;
+      this.render();
+      return { success: false, message: e.message || 'Kampanya uygulanamadı' };
+    }
+  },
+
+  clearCampaign() {
+    this.appliedCampaignCode = null;
+    this.discountAmount = 0.0;
+    this.render();
   },
 
   addItem(product) {
@@ -83,6 +112,13 @@ const Cart = {
 
   clear() {
     this.items = [];
+    this.appliedCampaignCode = null;
+    this.discountAmount = 0.0;
+    const badge = document.getElementById('appliedCampaignBadge');
+    if (badge) { badge.style.display = 'none'; badge.innerText = ''; }
+    const codeIn = document.getElementById('posCampaignCodeInput');
+    if (codeIn) codeIn.value = '';
+
     this.render();
     this.broadcastCfd('IDLE');
     const field = document.getElementById('posBarcodeField');
@@ -136,24 +172,38 @@ const Cart = {
       tbody.appendChild(tr);
     });
 
+    const grand = Math.max(0, subtotal - this.discountAmount);
+
     const elSub = document.getElementById('posSubtotal');
     const elVat = document.getElementById('posVat');
+    const elDiscRow = document.getElementById('posDiscountRow');
+    const elDiscVal = document.getElementById('posDiscountVal');
     const elGrand = document.getElementById('posGrandTotal');
+
     if (elSub) elSub.innerText = `${subtotal.toFixed(2)} ₺`;
     if (elVat) elVat.innerText = `${vatTotal.toFixed(2)} ₺`;
-    if (elGrand) elGrand.innerText = `${subtotal.toFixed(2)} ₺`;
+    if (elDiscRow && elDiscVal) {
+      if (this.discountAmount > 0) {
+        elDiscRow.style.display = 'flex';
+        elDiscVal.innerText = `-${this.discountAmount.toFixed(2)} ₺`;
+      } else {
+        elDiscRow.style.display = 'none';
+      }
+    }
+    if (elGrand) elGrand.innerText = `${grand.toFixed(2)} ₺`;
 
     this.broadcastCfd(this.items.length === 0 ? 'IDLE' : 'ACTIVE_SALE');
   },
 
   broadcastCfd(stateType = 'ACTIVE_SALE') {
-    const subtotal = this.getTotal();
+    const subtotal = this.getSubtotal();
+    const grand = this.getTotal();
     const cfdData = {
       state: this.items.length === 0 ? 'IDLE' : stateType,
       items: this.items,
       subtotal: subtotal,
-      discount: 0.0,
-      grand_total: subtotal,
+      discount: this.discountAmount,
+      grand_total: grand,
       tender: 0.0,
       change: 0.0,
       payment_method: null,

@@ -83,12 +83,23 @@ pub struct Sale {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SplitPayment {
+    pub method: String, // "CASH", "CREDIT_CARD", "VERESIYE", "BANK_TRANSFER"
+    pub amount: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct CheckoutRequest {
     pub items: Vec<CartItem>,
     pub payment_method: String,
     pub customer_id: Option<String>,
     pub tender_amount: Option<f64>,
     pub discount_amount: Option<f64>,
+    pub split_payments: Option<Vec<SplitPayment>>,
+    pub campaign_code: Option<String>,
+    pub is_efatura: Option<bool>,
+    pub tax_id_or_tckn: Option<String>,
+    pub company_title: Option<String>,
     pub notes: Option<String>,
 }
 
@@ -291,5 +302,199 @@ pub struct ShelfLabel {
     pub unit: String,
     pub vat_rate: f64,
     pub category: String,
+}
+
+// -------------------------------------------------------------
+// 1. Tedarikçiler & Mal Kabul / Alış İrsaliyesi
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Supplier {
+    pub id: String,
+    pub tenant_id: String,
+    pub name: String,
+    pub contact_name: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSupplierRequest {
+    pub name: String,
+    pub contact_name: Option<String>,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    pub address: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GoodsReceipt {
+    pub id: String,
+    pub tenant_id: String,
+    pub branch_id: String,
+    pub supplier_id: String,
+    pub supplier_name: String,
+    pub invoice_no: String,
+    pub receipt_date: String,
+    pub total_amount: f64,
+    pub notes: Option<String>,
+    pub items: Vec<GoodsReceiptItem>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GoodsReceiptItem {
+    pub product_id: String,
+    pub barcode: String,
+    pub name: String,
+    pub quantity: f64,
+    pub unit: String,
+    pub cost_price: f64,
+    pub sale_price: f64,
+    pub total_cost: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateGoodsReceiptRequest {
+    pub supplier_id: String,
+    pub supplier_name: String,
+    pub invoice_no: String,
+    pub receipt_date: String,
+    pub notes: Option<String>,
+    pub items: Vec<GoodsReceiptItem>,
+}
+
+// -------------------------------------------------------------
+// 2. Kampanyalar & İndirimler
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Campaign {
+    pub id: String,
+    pub tenant_id: String,
+    pub name: String,
+    pub campaign_type: String, // "PERCENT", "AMOUNT", "BUY_X_PAY_Y"
+    pub discount_percent: Option<f64>,
+    pub discount_amount: Option<f64>,
+    pub min_cart_amount: Option<f64>,
+    pub buy_qty: Option<i32>,
+    pub pay_qty: Option<i32>,
+    pub target_product_id: Option<String>,
+    pub target_category: Option<String>,
+    pub is_active: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCampaignRequest {
+    pub name: String,
+    pub campaign_type: String,
+    pub discount_percent: Option<f64>,
+    pub discount_amount: Option<f64>,
+    pub min_cart_amount: Option<f64>,
+    pub buy_qty: Option<i32>,
+    pub pay_qty: Option<i32>,
+    pub target_product_id: Option<String>,
+    pub target_category: Option<String>,
+}
+
+// -------------------------------------------------------------
+// 3. Şubeler & Şubeler Arası Mal Transferi
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Branch {
+    pub id: String,
+    pub tenant_id: String,
+    pub name: String,
+    pub code: Option<String>,
+    pub address: Option<String>,
+    pub phone: Option<String>,
+    pub is_active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockTransfer {
+    pub id: String,
+    pub tenant_id: String,
+    pub from_branch_id: String,
+    pub from_branch_name: String,
+    pub to_branch_id: String,
+    pub to_branch_name: String,
+    pub status: String, // "DRAFT", "DISPATCHED", "RECEIVED", "CANCELLED"
+    pub notes: Option<String>,
+    pub created_by: String,
+    pub items: Vec<StockTransferItem>,
+    pub created_at: String,
+    pub received_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockTransferItem {
+    pub product_id: String,
+    pub barcode: String,
+    pub name: String,
+    pub quantity: f64,
+    pub unit: String,
+    pub received_quantity: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateStockTransferRequest {
+    pub from_branch_id: String,
+    pub from_branch_name: String,
+    pub to_branch_id: String,
+    pub to_branch_name: String,
+    pub notes: Option<String>,
+    pub items: Vec<StockTransferItem>,
+}
+
+// -------------------------------------------------------------
+// 4. Kasa Vardiyaları & Çekmece Devri
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegisterShift {
+    pub id: String,
+    pub tenant_id: String,
+    pub branch_id: String,
+    pub register_name: String,
+    pub cashier_name: String,
+    pub opening_cash: f64,
+    pub closing_cash: Option<f64>,
+    pub expected_cash: Option<f64>,
+    pub cash_difference: Option<f64>,
+    pub notes: Option<String>,
+    pub status: String, // "OPEN", "CLOSED"
+    pub opened_at: String,
+    pub closed_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpenShiftRequest {
+    pub register_name: String,
+    pub cashier_name: String,
+    pub opening_cash: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CloseShiftRequest {
+    pub counted_cash: f64,
+    pub notes: Option<String>,
+}
+
+// -------------------------------------------------------------
+// 5. 4.13 Milyon Ulusal Barkod Kataloğu Arama Sonucu
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NationalProductInfo {
+    pub barcode: String,
+    pub name: String,
+    pub brand: Option<String>,
+    pub category: Option<String>,
+    pub vat_rate: Option<f64>,
+    pub unit: String,
+    pub is_weighed: bool,
+    pub plu_code: Option<String>,
+    pub suggested_price: Option<f64>,
+    pub source: String, // "NATIONAL_CATALOG_4.13M"
 }
 

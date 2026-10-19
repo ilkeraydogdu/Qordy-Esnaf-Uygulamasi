@@ -79,6 +79,7 @@ mod tests {
             tender_amount: Some(100.0),
             discount_amount: Some(0.0),
             notes: None,
+            ..Default::default()
         };
 
         let sale = db.process_checkout(req).expect("Satış işlenmeli");
@@ -121,6 +122,7 @@ mod tests {
             tender_amount: None,
             discount_amount: None,
             notes: None,
+            ..Default::default()
         };
 
         let veresiye_sale = db.process_checkout(veresiye_req).expect("Veresiye satışı işlenmeli");
@@ -397,6 +399,7 @@ mod tests {
             tender_amount: Some(50.0),
             discount_amount: None,
             notes: None,
+            ..Default::default()
         }).expect("Satış yapılmalı");
 
         // Satıştan sonra stok 150 - 4 = 146 oldu

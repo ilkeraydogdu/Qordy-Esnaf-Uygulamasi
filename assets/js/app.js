@@ -128,6 +128,10 @@ const App = {
       const f = document.getElementById('posBarcodeField');
       if (f) f.focus();
     } else if (screenId === 'transactions') Views.loadTransactions();
+    else if (screenId === 'receiving') Views.loadReceiving();
+    else if (screenId === 'campaigns') Views.loadCampaigns();
+    else if (screenId === 'transfers') Views.loadTransfers();
+    else if (screenId === 'registers') Views.loadShiftStatus();
     else if (screenId === 'products') Views.loadProducts();
     else if (screenId === 'stock') Views.loadStockSessions();
     else if (screenId === 'customers') Views.loadCustomers();

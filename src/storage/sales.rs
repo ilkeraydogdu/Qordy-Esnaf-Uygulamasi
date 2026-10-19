@@ -23,12 +23,12 @@ impl DatabaseManager {
             now.timestamp_subsec_micros()
         );
 
-        let tenant_id = "CUST_69653cfccb839".to_string();
-        let branch_id = "BR_01".to_string();
-        let branch_name = "Kadıköy Çarşı Şubesi".to_string();
-        let register_id = "KASA-01".to_string();
-        let cashier_id = "USR_01".to_string();
-        let cashier_name = "Ahmet Kasiyer".to_string();
+        let tenant_id = self.config.tenant_id.clone();
+        let branch_id = self.config.branch_id.clone();
+        let branch_name = self.config.branch_name.clone();
+        let register_id = self.config.register_id.clone();
+        let cashier_id = self.config.cashier_id.clone();
+        let cashier_name = self.config.cashier_name.clone();
 
         let mut subtotal = 0.0;
         let mut vat_total = 0.0;

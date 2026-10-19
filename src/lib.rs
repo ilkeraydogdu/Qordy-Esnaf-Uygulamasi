@@ -1,5 +1,6 @@
 pub mod api;
 pub mod barcode;
+pub mod config;
 pub mod escpos;
 pub mod models;
 pub mod server;

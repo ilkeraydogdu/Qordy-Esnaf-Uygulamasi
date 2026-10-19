@@ -8,7 +8,7 @@ pub struct EscPosBuilder {
 
 impl EscPosBuilder {
     pub fn new() -> Self {
-        let mut b = Self { buffer: Vec::new() };
+        let mut b = Self { buffer: Vec::with_capacity(4096) };
         b.init();
         b
     }
@@ -124,19 +124,15 @@ impl EscPosBuilder {
 /// Türkçe karakterleri termal yazıcıların desteklediği temiz ASCII karakterlere dönüştürür.
 /// Bu sayede bozuk karakter (? veya anlamsız simgeler) basılmasını önler.
 pub fn sanitize_turkish_text(input: &str) -> String {
-    input
-        .replace('ı', "i")
-        .replace('İ', "I")
-        .replace('ş', "s")
-        .replace('Ş', "S")
-        .replace('ğ', "g")
-        .replace('Ğ', "G")
-        .replace('ü', "u")
-        .replace('Ü', "U")
-        .replace('ö', "o")
-        .replace('Ö', "O")
-        .replace('ç', "c")
-        .replace('Ç', "C")
+    input.chars().map(|c| match c {
+        'ı' => 'i', 'İ' => 'I',
+        'ş' => 's', 'Ş' => 'S',
+        'ğ' => 'g', 'Ğ' => 'G',
+        'ü' => 'u', 'Ü' => 'U',
+        'ö' => 'o', 'Ö' => 'O',
+        'ç' => 'c', 'Ç' => 'C',
+        other => other,
+    }).collect()
 }
 
 pub struct ReceiptPrinter;
@@ -217,7 +213,7 @@ impl ReceiptPrinter {
         if sale.payment_method == "CASH" {
             b.row("ODENEN NAKIT:", &format!("{:.2} TL", sale.tender_amount), w);
             b.bold(true)
-                .row("PARA U OceanSTU:", &format!("{:.2} TL", sale.change_amount), w)
+                .row("PARA USTU:", &format!("{:.2} TL", sale.change_amount), w)
                 .bold(false);
         }
 

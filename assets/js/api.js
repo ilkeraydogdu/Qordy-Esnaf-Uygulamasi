@@ -72,5 +72,34 @@ const Api = {
   saveTerminalConfig: (data) => Api.post('/api/terminal/config', data),
   testTerminal: () => Api.post('/api/terminal/test', {}),
   payTerminal: (data) => Api.post('/api/terminal/pay', data),
-  updateCfd: (data) => Api.post('/api/cfd/update', data)
+  updateCfd: (data) => Api.post('/api/cfd/update', data),
+
+  // Mal Kabul & Alış İrsaliyesi / Tedarikçiler
+  getSuppliers: () => Api.get('/api/pos/suppliers'),
+  createSupplier: (data) => Api.post('/api/pos/suppliers', data),
+  getGoodsReceipts: () => Api.get('/api/pos/receiving'),
+  getGoodsReceiptDetail: (id) => Api.get(`/api/pos/receiving/${id}`),
+  createGoodsReceipt: (data) => Api.post('/api/pos/receiving', data),
+
+  // Kampanyalar & İndirimler
+  getCampaigns: () => Api.get('/api/pos/campaigns'),
+  createCampaign: (data) => Api.post('/api/pos/campaigns', data),
+  toggleCampaign: (id) => Api.post(`/api/pos/campaigns/${id}/toggle`, {}),
+  deleteCampaign: (id) => Api.delete(`/api/pos/campaigns/${id}`),
+  calculateCampaignDiscount: (code, subtotal, items) => Api.post('/api/pos/campaigns/calculate', { code, subtotal, items }),
+
+  // Şubeler & Şubeler Arası Transfer
+  getBranches: () => Api.get('/api/pos/branches'),
+  getTransfers: () => Api.get('/api/pos/transfers'),
+  createTransfer: (data) => Api.post('/api/pos/transfers', data),
+  receiveTransfer: (id) => Api.post(`/api/pos/transfers/${id}/receive`, {}),
+
+  // Kasa Vardiya & X-Raporu
+  getShiftStatus: () => Api.get('/api/pos/registers/shift/status'),
+  openShift: (data) => Api.post('/api/pos/registers/shift/open', data),
+  closeShift: (data) => Api.post('/api/pos/registers/shift/close', data),
+  getXReport: () => Api.get('/api/pos/registers/x-report'),
+
+  // 4.13 Milyon Ulusal Barkod Kataloğu
+  searchNationalCatalog: (barcode) => Api.get(`/api/pos/national-catalog/${barcode}`)
 };

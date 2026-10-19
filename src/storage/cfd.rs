@@ -11,9 +11,11 @@ impl DatabaseManager {
     pub fn update_cfd_state(&self, state: &CfdState) -> Result<()> {
         let conn = self.conn.lock();
         let payload = serde_json::to_string(state)?;
+        let state_name = &state.state;
+        let updated_at = &state.updated_at;
         conn.execute(
             "INSERT OR REPLACE INTO cfd_state (id, state, payload_json, updated_at) VALUES ('ACTIVE', ?1, ?2, ?3)",
-            params![state.state, payload, state.updated_at],
+            params![state_name, payload, updated_at],
         )?;
         Ok(())
     }

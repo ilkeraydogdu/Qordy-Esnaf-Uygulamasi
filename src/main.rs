@@ -1,5 +1,6 @@
 mod api;
 mod barcode;
+mod config;
 mod escpos;
 mod models;
 mod server;
@@ -9,6 +10,7 @@ mod terminal;
 mod ui;
 
 use anyhow::Result;
+use config::AppConfig;
 use server::AppState;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -58,30 +60,29 @@ fn main() -> Result<()> {
     info!(" QORDY Esnaf POS v3.0 (Rust Edition - Offline-First)   ");
     info!("========================================================");
 
-    // 2. Tokio Async Runtime Başlat (Arka plan HTTP & Sync için)
+    // 2. Konfigürasyon Yükle (config.toml veya ortam değişkenleri)
+    let app_config = AppConfig::load()?;
+    info!("Konfigürasyon yüklendi: tenant={}, register={}", app_config.tenant_id, app_config.register_id);
+
+    // 3. Tokio Async Runtime Başlat (Arka plan HTTP & Sync için)
     let rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?;
 
-    // 3. Veritabanı Yolu ve Başlatma
+    // 4. Veritabanı Yolu ve Başlatma
     let data_dir = get_data_dir();
     let db_path = data_dir.join("qordy_pos.db");
-    info!("📂 SQLite Veritabanı: {}", db_path.display());
+    info!("SQLite Veritabanı: {}", db_path.display());
 
-    let db = storage::DatabaseManager::new(&db_path)?;
+    let db = storage::DatabaseManager::new_with_config(&db_path, &app_config)?;
 
-    // 4. Senkronizasyon Motoru
-    let cloud_url = "https://qordy.com";
-    let api_key = "42ac390b9f93aa624d7ed72b6ca603e408a9de3d8f859218c157019db3ff6700";
-    let tenant_id = "CUST_69653cfccb839";
-    let register_id = "KASA-01";
-
+    // 5. Senkronizasyon Motoru
     let sync_engine = sync::SyncEngine::new(
         db.clone(),
-        cloud_url,
-        api_key,
-        tenant_id,
-        register_id,
+        &app_config.cloud_url,
+        &app_config.api_key,
+        &app_config.tenant_id,
+        &app_config.register_id,
     );
 
     let (ws_tx, _ws_rx) = tokio::sync::broadcast::channel(100);
@@ -95,6 +96,7 @@ fn main() -> Result<()> {
         sync: sync_engine.clone(),
         terminal_mgr: terminal_mgr.clone(),
         ws_tx,
+        config: app_config.clone(),
     });
 
     let sync_clone = sync_engine.clone();
@@ -104,15 +106,15 @@ fn main() -> Result<()> {
         sync_clone.start_background_worker();
     });
 
-    let port = 8090;
+    let port = app_config.port;
     rt.spawn(async move {
         if let Err(e) = server::start_server(state_clone, port).await {
             error!("HTTP Sunucu başlatılamadı: {}", e);
         }
     });
 
-    // 5. Masaüstü Penceresi ve Wry Webview Başlat
-    info!("🖥️  Yerel Masaüstü Arayüzü başlatılıyor (Tao + Wry)...");
+    // 6. Masaüstü Penceresi ve Wry Webview Başlat
+    info!("Yerel Masaüstü Arayüzü başlatılıyor (Tao + Wry)...");
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .with_title("QORDY Esnaf POS - Çevrimdışı Perakende & Hızlı Satış")
@@ -128,7 +130,7 @@ fn main() -> Result<()> {
         .with_url(&pos_url)
         .build(&window)?;
 
-    info!("✅ Sistem hazır. Webview penceresi açıldı.");
+    info!("Sistem hazır. Webview penceresi açıldı.");
 
     // Event Loop (Ana UI iş parçacığında çalışır)
     event_loop.run(move |event, _, control_flow| {

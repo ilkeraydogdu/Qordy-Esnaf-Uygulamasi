@@ -19,15 +19,19 @@
     </div>
 
     <!-- Navigation Tabs -->
-    <nav class="nav-segmented">
+    <nav class="nav-segmented" style="overflow-x: auto; max-width: 62%;">
       <button class="nav-seg-btn active" onclick="switchMainScreen('pos')">🛒 Kasa</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('transactions')">🧾 İşlemler & İade</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('receiving')">📥 Mal Kabul</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('campaigns')">🎯 Kampanyalar</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('transfers')">🏢 Şube Transferi</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('registers')">💵 Kasa & Vardiya</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('products')">📦 Ürünler</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('stock')">📋 Stok Sayım</button>
-      <button class="nav-seg-btn" onclick="switchMainScreen('customers')">📒 Veresiye Defteri</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('customers')">📒 Veresiye</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('wastes')">🗑️ Fire Takibi</button>
-      <button class="nav-seg-btn" onclick="switchMainScreen('labels')">🏷️ Raf Etiketleri</button>
-      <button class="nav-seg-btn" onclick="switchMainScreen('cash')">💵 Kasa Hareketleri</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('labels')">🏷️ Raf Etiketi</button>
+      <button class="nav-seg-btn" onclick="switchMainScreen('cash')">💰 Nakit Avans</button>
       <button class="nav-seg-btn" onclick="switchMainScreen('reports')">📊 Z-Raporu</button>
       <button class="nav-seg-btn" onclick="openCustomerDisplayTab()">📺 2. Ekran</button>
     </nav>
@@ -92,12 +96,23 @@
             <span>KDV Toplam</span>
             <span id="posVat">0.00 ₺</span>
           </div>
+          <div class="row-summary" id="posDiscountRow" style="display:none; color:var(--apple-green);">
+            <span>İndirim Tutarı</span>
+            <span id="posDiscountVal">-0.00 ₺</span>
+          </div>
           <div class="row-grand">
             <span class="grand-label">GENEL TOPLAM</span>
             <span class="grand-val" id="posGrandTotal">0.00 ₺</span>
           </div>
 
-          <div class="pay-grid">
+          <!-- Kampanya / İndirim Kuponu -->
+          <div style="display:flex; gap:6px; margin: 8px 0; align-items:center;">
+            <input type="text" id="posCampaignCodeInput" class="form-input" placeholder="Kampanya / İndirim Kodu..." style="padding:6px 10px; font-size:12px; text-transform:uppercase;">
+            <button type="button" class="btn-top-action" style="padding:6px 12px; font-size:12px;" onclick="Views.applyCampaignCode()">Uygula</button>
+            <div id="appliedCampaignBadge" style="display:none; font-size:12px; color:var(--apple-green); font-weight:700;"></div>
+          </div>
+
+          <div class="pay-grid" style="grid-template-columns: repeat(4, 1fr);">
             <button class="btn-checkout btn-cash" onclick="openCashModal()">
               <span>NAKİT [F2]</span>
               <span class="sub">Para Üstü Hesapla</span>
@@ -107,8 +122,12 @@
               <span class="sub">Temassız / Çipli</span>
             </button>
             <button class="btn-checkout btn-veresiye" onclick="openVeresiyeCustomerModal()">
-              <span>VERESİYE / CARİ BORÇ [F4]</span>
-              <span class="sub">Müşteri Hesabına Ekle</span>
+              <span>VERESİYE [F4]</span>
+              <span class="sub">Cari Hesaba Ekle</span>
+            </button>
+            <button class="btn-checkout btn-top-action" style="background:linear-gradient(135deg, #8b5cf6, #3b82f6); color:white; border:none; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px 4px;" onclick="Views.openSplitPayModal()">
+              <span style="font-weight:800; font-size:12px;">PARÇALI ÖDEME</span>
+              <span class="sub" style="color:rgba(255,255,255,0.85); font-size:10px;">Nakit + Kart + Cari</span>
             </button>
           </div>
         </div>
@@ -334,6 +353,118 @@
         </table>
       </div>
     </div>
+
+    <!-- SCREEN 10: MAL KABUL & ALIŞ İRSALİYESİ -->
+    <div class="screen-view crud-layout" id="screen-receiving">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">📥 Mal Kabul & Alış İrsaliyesi / Tedarikçiler</div>
+          <div style="font-size:12px; color:var(--text-muted);">Toptancı ve üreticilerden gelen malları teslim alın, stokları ve alış maliyetlerini tek tıkla güncelleyin</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-top-action" onclick="Views.openNewSupplierModal()">+ Tedarikçi Ekle</button>
+          <button class="btn-checkout btn-cash" style="padding:10px 18px; font-size:13px;" onclick="Views.openNewGoodsReceiptModal()">
+            + Yeni Mal Kabul Fişi
+          </button>
+          <button class="btn-top-action" onclick="Views.loadReceiving()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>İrsaliye / Fatura No</th>
+              <th>Tarih</th>
+              <th>Tedarikçi Firma</th>
+              <th>Kalem Sayısı</th>
+              <th>Toplam Maliyet (₺)</th>
+              <th>Açıklama</th>
+              <th style="text-align:right;">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="receivingTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREEN 11: KAMPANYALAR & İNDİRİMLER -->
+    <div class="screen-view crud-layout" id="screen-campaigns">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">🎯 Kampanyalar, İndirimler & Kuponlar</div>
+          <div style="font-size:12px; color:var(--text-muted);">Yüzde indirimleri, sepet tutar indirimleri ve X Al Y Öde promosyon kuralları</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-checkout btn-cash" style="padding:10px 18px; font-size:13px;" onclick="Views.openNewCampaignModal()">
+            + Yeni Kampanya Tanımla
+          </button>
+          <button class="btn-top-action" onclick="Views.loadCampaigns()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Kampanya Kodu</th>
+              <th>Kampanya Adı</th>
+              <th>İndirim Türü</th>
+              <th>İndirim Değeri</th>
+              <th>Min. Sepet (₺)</th>
+              <th>Durum</th>
+              <th style="text-align:right;">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="campaignsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREEN 12: ŞUBELER & ŞUBELER ARASI TRANSFER -->
+    <div class="screen-view crud-layout" id="screen-transfers">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">🏢 Şubeler & Şubeler Arası Mal Transferi</div>
+          <div style="font-size:12px; color:var(--text-muted);">Merkez ve şubeler arasında stok sevk irsaliyeleri oluşturun ve teslim alın</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-checkout btn-cash" style="padding:10px 18px; font-size:13px;" onclick="Views.openNewTransferModal()">
+            + Yeni Şube Sevkıyatı
+          </button>
+          <button class="btn-top-action" onclick="Views.loadTransfers()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Transfer Kodu</th>
+              <th>Tarih</th>
+              <th>Çıkış Şubesi</th>
+              <th>Hedef Şube</th>
+              <th>Kalem Sayısı</th>
+              <th>Durum</th>
+              <th style="text-align:right;">İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="transfersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SCREEN 13: KASA & VARDİYA / X-RAPORU -->
+    <div class="screen-view crud-layout" id="screen-registers">
+      <div class="crud-header">
+        <div>
+          <div class="crud-title">💵 Kasa & Vardiya / X-Raporu / Kasa Sayımı</div>
+          <div style="font-size:12px; color:var(--text-muted);">Kasiyer vardiya açılışı, çekmece devir nakdi, ara kasa X-raporu ve kapanış kasa farkı sayımı</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-top-action" onclick="Views.showXReport()">📄 X-Raporu Al (Ara Kasa)</button>
+          <button class="btn-top-action" onclick="Views.loadShiftStatus()">🔄 Yenile</button>
+        </div>
+      </div>
+      <div id="shiftStatusContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
+    </div>
   </main>
 
   <!-- MODALS -->
@@ -384,7 +515,11 @@
       <div class="form-row">
         <div class="form-group">
           <label>Barkod:</label>
-          <input type="text" id="npBarcode" class="form-input" placeholder="Barkod okutun veya girin">
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="npBarcode" class="form-input" placeholder="Barkod okutun veya girin" onchange="Views.lookupNationalCatalog()">
+            <button type="button" class="btn-top-action" onclick="Views.lookupNationalCatalog()" title="4.13 Milyon Ulusal Barkod Veritabanında Ara">🔍 4.13M Katalog</button>
+          </div>
+          <div id="npCatalogMatchBadge" style="display:none; font-size:11px; color:var(--apple-green); font-weight:700; margin-top:4px;">✨ Ulusal Katalogdan Otomatik Dolduruldu</div>
         </div>
         <div class="form-group">
           <label>Kategori:</label>
@@ -617,23 +752,311 @@
   </div>
 
   <!-- EFT-POS Kart Ödeme Modalı (Beko & Mock) -->
-  <div class="modal-overlay" id="eftPosPayModal">
-    <div class="modal-window" style="text-align:center;">
-      <div class="modal-heading">EFT-POS Kart Tahsilatı</div>
-      <div style="font-size:12px; color:var(--apple-blue); font-weight:600;" id="eftPosDeviceLabel">Sanal POS Simülatörü</div>
-      <div style="background:#0b0f19; padding:20px; border-radius:14px; margin:8px 0;">
-        <div style="font-size:12px; color:var(--text-muted);">Ödenecek Tutar</div>
-        <div style="font-size:36px; font-weight:900; color:#38bdf8;" id="eftPosAmountText">0.00 ₺</div>
+  <!-- Parçalı / Karma Ödeme Modalı -->
+  <div class="modal-overlay" id="splitPayModal">
+    <div class="modal-window" style="width:520px;">
+      <div class="modal-heading">💳 Parçalı & Karma Ödeme</div>
+      <div style="background:#0b0f19; padding:16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:12px; color:var(--text-muted);">Ödenecek Toplam Tutar:</div>
+          <div style="font-size:24px; font-weight:800; color:#38bdf8;" id="splitTotalDue">0.00 ₺</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-muted);">Kalan / Fark:</div>
+          <div style="font-size:24px; font-weight:800; color:var(--apple-amber);" id="splitRemainingAmount">0.00 ₺</div>
+        </div>
       </div>
-      <div class="pulse-terminal" id="eftPosIcon">💳</div>
-      <div style="font-size:14px; font-weight:700; color:var(--text-main);" id="eftPosStatusText">
-        Kartınızı Okutunuz veya Şifrenizi Giriniz...
+
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+        <div class="form-group">
+          <label style="color:var(--apple-green); font-weight:700;">💵 Alınan Nakit Tutar (TL):</label>
+          <input type="number" id="splitCashAmount" class="form-input" step="0.5" placeholder="0.00" oninput="Views.updateSplitCalc()">
+        </div>
+        <div class="form-group">
+          <label style="color:var(--apple-blue); font-weight:700;">💳 Kredi Kartı ile Çekilen (TL):</label>
+          <input type="number" id="splitCardAmount" class="form-input" step="0.5" placeholder="0.00" oninput="Views.updateSplitCalc()">
+        </div>
+        <div class="form-group">
+          <label style="color:var(--apple-amber); font-weight:700;">📒 Veresiye / Cari Hesaba Yazılan (TL):</label>
+          <div style="display:flex; gap:8px;">
+            <input type="number" id="splitVeresiyeAmount" class="form-input" step="0.5" placeholder="0.00" style="flex:1;" oninput="Views.updateSplitCalc()">
+            <select id="splitCustomerSelect" class="form-input" style="flex:1.5;">
+              <option value="">-- Müşteri / Cari Seçin --</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div style="font-size:12px; color:var(--text-muted);" id="eftPosSubtext">
-        Cihazdan provizyon yanıtı bekleniyor
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('splitPayModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" id="btnSubmitSplitSale" style="flex:2;" onclick="Views.submitSplitSale()">SATIŞI TAMAMLA & FİŞ BAS</button>
       </div>
-      <div id="eftPosDetails" style="display:none; background:#0b0f19; padding:12px; border-radius:10px; font-size:12px; text-align:left; font-family:monospace;"></div>
-      <button class="btn-top-action" id="eftPosCancelBtn" style="justify-content:center; margin-top:8px;" onclick="closeModal('eftPosPayModal')">İşlemi İptal Et</button>
+    </div>
+  </div>
+
+  <!-- Yeni Tedarikçi Tanımla Modalı -->
+  <div class="modal-overlay" id="newSupplierModal">
+    <div class="modal-window">
+      <div class="modal-heading">Yeni Tedarikçi Firma Tanımla</div>
+      <div class="form-group">
+        <label>Firma / Tedarikçi Ünvanı:</label>
+        <input type="text" id="nsName" class="form-input" placeholder="Örn: Anadolu Gıda Toptan A.Ş.">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Yetkili Kişi:</label>
+          <input type="text" id="nsContact" class="form-input" placeholder="Ahmet Yılmaz">
+        </div>
+        <div class="form-group">
+          <label>Telefon:</label>
+          <input type="text" id="nsPhone" class="form-input" placeholder="0216 000 00 00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Vergi Numarası & Dairesi:</label>
+        <input type="text" id="nsTaxInfo" class="form-input" placeholder="Kadıköy VD - 1234567890">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('newSupplierModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="Views.saveNewSupplier()">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Mal Kabul Fişi Modalı -->
+  <div class="modal-overlay" id="newGoodsReceiptModal">
+    <div class="modal-window" style="width:780px; max-height:85vh; overflow-y:auto;">
+      <div class="modal-heading">📥 Yeni Mal Kabul & Alış İrsaliyesi Girişi</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tedarikçi Firma:</label>
+          <select id="ngrSupplierSelect" class="form-input"></select>
+        </div>
+        <div class="form-group">
+          <label>İrsaliye / Fatura No:</label>
+          <input type="text" id="ngrInvoiceNo" class="form-input" placeholder="IRS-2026-00123">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Açıklama / Sevk Notu:</label>
+        <input type="text" id="ngrNotes" class="form-input" placeholder="Haftalık market temel gıda sevkıyatı...">
+      </div>
+
+      <div style="background:var(--bg-card); padding:12px; border-radius:10px; margin:10px 0;">
+        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px;">Kalem Ekle (Barkod Okutun veya Arayın):</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="ngrBarcodeField" class="form-input" style="flex:2;" placeholder="Barkod okutun veya ürün adı yazın..." onkeydown="if(event.key==='Enter'){event.preventDefault();Views.lookupAndAddReceivingItem();}">
+          <input type="number" id="ngrQtyField" class="form-input" style="width:90px;" placeholder="Miktar" value="1" min="0.1" step="0.1">
+          <input type="number" id="ngrCostField" class="form-input" style="width:110px;" placeholder="Alış Maliyet (TL)" step="0.1">
+          <button type="button" class="btn-top-action" onclick="Views.lookupAndAddReceivingItem()">+ Kalem Ekle</button>
+        </div>
+        <div id="ngrItemLookupStatus" style="font-size:11px; margin-top:4px; color:var(--apple-blue); min-height:16px;"></div>
+      </div>
+
+      <div class="table-container" style="max-height:220px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ürün Adı</th>
+              <th>Barkod</th>
+              <th>Gelen Miktar</th>
+              <th>Birim Alış (₺)</th>
+              <th>Satır Toplamı (₺)</th>
+              <th style="width:30px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ngrItemsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div style="background:#0b0f19; padding:12px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+        <span style="font-size:13px; font-weight:700;">Toplam İrsaliye Tutarı:</span>
+        <span id="ngrGrandTotalText" style="font-size:22px; font-weight:900; color:var(--apple-green);">0.00 ₺</span>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('newGoodsReceiptModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="Views.submitGoodsReceipt()">STOKLARA İŞLE & MAL KABULÜ BİTİR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mal Kabul Detay Modalı -->
+  <div class="modal-overlay" id="goodsReceiptDetailModal">
+    <div class="modal-window" style="width:680px;">
+      <div class="modal-heading">İrsaliye Detayı</div>
+      <div id="receiptDetailHeader" style="background:#0b0f19; padding:14px; border-radius:10px; font-size:13px; display:flex; justify-content:space-between;"></div>
+      <div class="table-container" style="max-height:260px; margin-top:10px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ürün</th>
+              <th>Barkod</th>
+              <th>Miktar</th>
+              <th>Alış Maliyeti (₺)</th>
+              <th>Toplam (₺)</th>
+            </tr>
+          </thead>
+          <tbody id="receiptDetailItemsBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-top-action" style="justify-content:center; margin-top:12px;" onclick="closeModal('goodsReceiptDetailModal')">Kapat</button>
+    </div>
+  </div>
+
+  <!-- Yeni Kampanya Tanımla Modalı -->
+  <div class="modal-overlay" id="newCampaignModal">
+    <div class="modal-window">
+      <div class="modal-heading">Yeni Kampanya & İndirim Kodu</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kupon / Kampanya Kodu:</label>
+          <input type="text" id="ncCode" class="form-input" placeholder="Örn: YAZ10, CADDE20" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+          <label>Kampanya Başlığı:</label>
+          <input type="text" id="ncName" class="form-input" placeholder="Örn: Açılış İndirimi %10">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>İndirim Türü:</label>
+          <select id="ncType" class="form-input">
+            <option value="PERCENT">Yüzde İndirimi (%)</option>
+            <option value="AMOUNT">Sabit Tutar İndirimi (₺)</option>
+            <option value="BUY_X_PAY_Y">X Al Y Öde Promosyonu</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>İndirim Değeri:</label>
+          <input type="number" id="ncValue" class="form-input" placeholder="10.0" step="0.5">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Minimum Sepet Tutarı (₺):</label>
+        <input type="number" id="ncMinSubtotal" class="form-input" value="0.0" step="10">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('newCampaignModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="Views.saveNewCampaign()">Kampanyayı Başlat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Şube Transferi Modalı -->
+  <div class="modal-overlay" id="newTransferModal">
+    <div class="modal-window" style="width:620px;">
+      <div class="modal-heading">🏢 Şubeler Arası Mal Transferi Başlat</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Çıkış Şubesi (Mevcut):</label>
+          <input type="text" id="ntFromBranchDisplay" class="form-input" readonly value="Kadıköy Çarşı Şubesi" style="opacity:0.7;">
+        </div>
+        <div class="form-group">
+          <label>Hedef / Varış Şubesi:</label>
+          <select id="ntToBranchSelect" class="form-input"></select>
+        </div>
+      </div>
+
+      <div style="background:var(--bg-card); padding:12px; border-radius:10px; margin:10px 0;">
+        <div style="font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px;">Sevk Edilecek Ürün Seçin:</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="ntBarcodeField" class="form-input" style="flex:2;" placeholder="Barkod okutun veya ürün adı yazın..." onkeydown="if(event.key==='Enter'){event.preventDefault();Views.addTransferItemRow();}">
+          <input type="number" id="ntQtyField" class="form-input" style="width:100px;" placeholder="Miktar" value="1" min="1" step="1">
+          <button type="button" class="btn-top-action" onclick="Views.addTransferItemRow()">+ Kalem Ekle</button>
+        </div>
+        <div id="ntLookupStatus" style="font-size:11px; margin-top:4px; color:var(--apple-blue); min-height:16px;"></div>
+      </div>
+
+      <div class="table-container" style="max-height:180px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ürün Adı</th>
+              <th>Barkod</th>
+              <th>Transfer Miktarı</th>
+              <th style="width:30px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ntItemsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>Sevk İrsaliye Notu:</label>
+        <input type="text" id="ntNotes" class="form-input" placeholder="Koli adedi, kurye veya araç plakası...">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('newTransferModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="Views.submitTransfer()">SEVKİYATI ONAYLA & STOKTAN DÜŞ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vardiya Aç Modalı -->
+  <div class="modal-overlay" id="openShiftModal">
+    <div class="modal-window">
+      <div class="modal-heading">🟢 Vardiya Açılışı (Kasa Devri)</div>
+      <div class="form-group">
+        <label>Kasiyer Adı:</label>
+        <input type="text" id="osCashierName" class="form-input" value="Ahmet Kasiyer">
+      </div>
+      <div class="form-group">
+        <label>Kasa Başlangıç Devir Nakdi (Float TL):</label>
+        <input type="number" id="osOpeningFloat" class="form-input" style="font-size:22px; font-weight:800;" value="500.00" step="50">
+      </div>
+      <div class="form-group">
+        <label>Açılış Notu:</label>
+        <input type="text" id="osNotes" class="form-input" placeholder="Sabah vardiyası bozuk para teslim alındı">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('openShiftModal')">Vazgeç</button>
+        <button class="btn-checkout btn-cash" style="flex:2;" onclick="Views.submitOpenShift()">VARDİYAYI BAŞLAT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vardiya Kapat & Kasa Sayımı Modalı -->
+  <div class="modal-overlay" id="closeShiftModal">
+    <div class="modal-window" style="width:520px;">
+      <div class="modal-heading">🔴 Gün Sonu Vardiya Kapatma & Kasa Sayımı</div>
+      <div style="background:#0b0f19; padding:16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-size:12px; color:var(--text-muted);">Sistemde Olması Gereken Nakit:</div>
+          <div style="font-size:24px; font-weight:800; color:var(--apple-blue);" id="csExpectedCashDisplay">0.00 ₺</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-muted);">Kasa Farkı:</div>
+          <div style="font-size:24px; font-weight:800;" id="csDiscrepancyDisplay">0.00 ₺</div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;">
+        <label style="font-size:14px; font-weight:700;">Çekmecede Sayılan Fiziki Nakit (TL):</label>
+        <input type="number" id="csActualCashInput" class="form-input" style="font-size:24px; font-weight:800;" placeholder="0.00" step="0.5" oninput="Views.updateCloseShiftCalc()">
+      </div>
+      <div class="form-group">
+        <label>Kapanış Notu / Sayım Açıklaması:</label>
+        <input type="text" id="csNotesInput" class="form-input" placeholder="Akşam sayımı yapıldı, kasa devredildi">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('closeShiftModal')">Vazgeç</button>
+        <button class="btn-checkout btn-danger" style="flex:2;" onclick="Views.submitCloseShift()">VARDİYAYI KAPAT & Z-RAPORU AL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- X-Raporu Modal -->
+  <div class="modal-overlay" id="xReportModal">
+    <div class="modal-window" style="width:480px;">
+      <div class="modal-heading">📄 Gün İçi X-Raporu (Ara Kasa)</div>
+      <div id="xReportReceiptArea" style="background:#0b0f19; padding:20px; border-radius:12px; font-family:monospace; font-size:12px; line-height:1.5;"></div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-top-action" style="flex:1; justify-content:center;" onclick="closeModal('xReportModal')">Kapat</button>
+        <button class="btn-checkout btn-card" style="flex:1.5;" onclick="window.print()">🖨️ Raporu Yazdır</button>
+      </div>
     </div>
   </div>
 

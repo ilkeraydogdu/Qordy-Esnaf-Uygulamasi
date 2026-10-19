@@ -18,8 +18,8 @@ impl DatabaseManager {
         let conn = self.conn.lock();
         let id = Uuid::new_v4().to_string();
         let now = Local::now().to_rfc3339();
-        let register_id = "KASA-01";
-        let cashier_name = "Ahmet Kasiyer";
+        let register_id = &self.config.register_id;
+        let cashier_name = &self.config.cashier_name;
 
         conn.execute(
             "INSERT INTO cash_movements (id, movement_type, amount, reason, register_id, cashier_name, created_at)

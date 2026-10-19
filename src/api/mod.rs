@@ -1,15 +1,21 @@
 //! QORDY POS - Modular API Layer
 //! Decoupled enterprise REST & WebSocket routing architecture.
 
+pub mod campaigns;
 pub mod cash;
+pub mod catalog;
 pub mod cfd;
 pub mod customers;
 pub mod hardware;
 pub mod inventory;
 pub mod pos;
+pub mod receiving;
+pub mod registers;
 pub mod static_files;
 pub mod terminal;
+pub mod transfers;
 
+use crate::config::AppConfig;
 use crate::storage::DatabaseManager;
 use crate::sync::SyncEngine;
 use crate::terminal::TerminalManager;
@@ -28,6 +34,7 @@ pub struct AppState {
     pub sync: Arc<SyncEngine>,
     pub terminal_mgr: Arc<TerminalManager>,
     pub ws_tx: broadcast::Sender<String>,
+    pub config: AppConfig,
 }
 
 pub fn create_router(state: Arc<AppState>) -> Router {
@@ -92,6 +99,33 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/api/terminal/config", post(terminal::handle_save_terminal_config))
         .route("/api/print/receipt", post(hardware::handle_print_receipt))
         .route("/api/print/drawer", post(hardware::handle_kick_drawer))
+        // ---------------------------------------------------------------------
+        // Kurumsal Perakende Ek Modülleri (Server ile %100 Uyumlu)
+        // ---------------------------------------------------------------------
+        // 1. Mal Kabul & Tedarikçiler
+        .route("/api/pos/suppliers", get(receiving::handle_get_suppliers).post(receiving::handle_create_supplier))
+        .route("/api/pos/receiving", post(receiving::handle_process_receiving))
+        .route("/api/pos/receiving/history", get(receiving::handle_receiving_history))
+        .route("/api/pos/receiving/:id", get(receiving::handle_receiving_detail))
+        // 2. Kampanyalar & İndirimler
+        .route("/api/pos/campaigns", get(campaigns::handle_get_campaigns).post(campaigns::handle_create_campaign))
+        .route("/api/pos/campaigns/:id/toggle", post(campaigns::handle_toggle_campaign))
+        .route("/api/pos/campaigns/:id", delete(campaigns::handle_delete_campaign))
+        .route("/api/pos/campaigns/calculate", post(campaigns::handle_calculate_campaign))
+        // 3. Şubeler & Mal Transferleri
+        .route("/api/pos/branches", get(transfers::handle_get_branches))
+        .route("/api/pos/transfers", get(transfers::handle_get_transfers).post(transfers::handle_create_transfer))
+        .route("/api/pos/transfers/:id", get(transfers::handle_get_transfer_detail))
+        .route("/api/pos/transfers/:id/receive", post(transfers::handle_receive_transfer))
+        // 4. Kasa & Vardiya Yönetimi (Açılış, Kapanış, X-Raporu)
+        .route("/api/pos/registers/shift/active", get(registers::handle_get_active_shift))
+        .route("/api/pos/registers/shift/open", post(registers::handle_open_shift))
+        .route("/api/pos/registers/shift/close", post(registers::handle_close_shift))
+        .route("/api/pos/registers/x-report", get(registers::handle_x_report))
+        .route("/api/pos/registers/shifts", get(registers::handle_shift_history))
+        // 5. 4.13 Milyon Ulusal Barkod Kataloğu Arama
+        .route("/api/pos/national-catalog/:barcode", get(catalog::handle_national_catalog_lookup))
+        .route("/api/pos/national-catalog/search", get(catalog::handle_national_catalog_search))
         .layer(cors)
         .with_state(state)
 }

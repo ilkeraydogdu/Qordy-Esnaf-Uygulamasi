@@ -71,9 +71,9 @@ impl DatabaseManager {
 
         Ok(ZReport {
             z_number: format!("Z-{}", Local::now().format("%Y%m%d%H%M")),
-            branch_name: "Kadıköy Çarşı Şubesi".to_string(),
-            register_id: "KASA-01".to_string(),
-            cashier_name: "Ahmet Kasiyer".to_string(),
+            branch_name: self.config.branch_name.clone(),
+            register_id: self.config.register_id.clone(),
+            cashier_name: self.config.cashier_name.clone(),
             date: Local::now().format("%d.%m.%Y %H:%M").to_string(),
             total_sales_count: total_count,
             total_gross,
@@ -121,18 +121,18 @@ impl DatabaseManager {
 
         PosStatus {
             version: "3.0.0".to_string(),
-            tenant_id: "CUST_69653cfccb839".to_string(),
-            business_name: "QORDY Cadde Esnaf".to_string(),
-            branch_id: "BR_01".to_string(),
-            branch_name: "Kadıköy Çarşı Şubesi".to_string(),
-            register_id: "KASA-01".to_string(),
-            cashier_name: "Ahmet Kasiyer".to_string(),
+            tenant_id: self.config.tenant_id.clone(),
+            business_name: self.config.business_name.clone(),
+            branch_id: self.config.branch_id.clone(),
+            branch_name: self.config.branch_name.clone(),
+            register_id: self.config.register_id.clone(),
+            cashier_name: self.config.cashier_name.clone(),
             is_online,
             pending_sync_count: pending,
             today_sales_count: count,
             today_revenue: revenue,
             local_ip,
-            port: 8090,
+            port: self.config.port,
         }
     }
 }
