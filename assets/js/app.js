@@ -45,7 +45,7 @@ const App = {
     const wsUri = (loc.protocol === 'https:' ? 'wss://' : 'ws://') + loc.host + '/ws/pos';
     this.ws = new WebSocket(wsUri);
 
-    this.ws.onopen = () => console.log('✅ POS WebSocket bağlı');
+    this.ws.onopen = () => console.log('POS WebSocket bagli');
     this.ws.onclose = () => setTimeout(() => this.initWebSocket(), 2000);
     this.ws.onerror = (e) => console.warn('WS Hata', e);
   },
@@ -110,9 +110,9 @@ const App = {
       const d = await Api.scanBarcode(clean);
       if (d.found && d.suggested_item) {
         Cart.pushItem(d.suggested_item);
-        this.showToast(`✅ ${d.suggested_item.name} eklendi`);
+        this.showToast(`${d.suggested_item.name} eklendi`);
       } else {
-        this.showToast(`❌ Barkod bulunamadı: ${clean}`, true);
+        this.showToast(`Barkod bulunamadı: ${clean}`, true);
       }
     } catch (e) {}
   },
@@ -199,7 +199,7 @@ const App = {
       };
 
       const resp = await Api.checkout(payload);
-      this.showToast(`🎉 Satış tamamlandı! Fiş: ${resp.receipt_no}`);
+      this.showToast(`Satış tamamlandı. Fiş No: ${resp.receipt_no}`);
       Cart.clear();
       this.fetchStatus();
     } catch (e) {
@@ -257,7 +257,7 @@ const App = {
 
     try {
       await Api.parkCart({ note, items: Cart.getItems() });
-      this.showToast('⏸️ Sepet bekletmeye alındı');
+      this.showToast('Sepet bekletmeye alındı');
       Cart.clear();
       this.loadParkedCount();
     } catch (e) {}
@@ -311,7 +311,7 @@ const App = {
         await Api.deleteParkedCart(id);
         this.closeModal('parkedCartsModal');
         this.loadParkedCount();
-        this.showToast('✅ Sepet kasaya geri çağrıldı');
+        this.showToast('Sepet kasaya geri çağrıldı');
       }
     } catch (e) {}
   },

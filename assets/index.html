@@ -3,54 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QORDY Esnaf POS - Çevrimdışı & Online Perakende Satış</title>
+  <title>QORDY Esnaf POS - Yerel Perakende Sistemi</title>
+  <link rel="stylesheet" href="/assets/css/style.css?v=20261020_3" />
   <link rel="icon" type="image/png" href="/assets/images/favicon.png" />
-  <link rel="stylesheet" href="/assets/css/style.css?v=20261020_4" />
 </head>
 <body>
 
-  <!-- macOS Native Left Sidebar -->
+  <!-- Left: macOS Native Navigation Sidebar -->
   <aside class="sidebar">
-    <div class="window-traffic-lights-spacer"></div>
-
-    <div class="brand-header">
-      <div class="tenant-logo-wrap">
-        <img id="sidebarTenantLogo" src="/assets/images/caddecafe_logo.webp" alt="İşletme Logosu" class="tenant-logo-img" onerror="this.src='/assets/images/qordy_app_icon.png'" />
-      </div>
-      <div class="brand-meta">
-        <h1 id="hdrStoreName">Cadde Esnaf</h1>
-        <div id="hdrBranch" class="tenant-branch-tag">Kadıköy Çarşı Şubesi</div>
-        <div class="tenant-code-tag">Kasa: <span id="hdrRegisterId" class="tenant-code-badge">KASA-01</span> • #CUST_69653cf</div>
+    <!-- Brand & Window Controls -->
+    <div class="sidebar-brand-card">
+      <div class="brand-logo-wrap">
+        <img src="/assets/images/caddecafe_logo.webp" alt="QORDY" class="brand-avatar" onerror="this.src='/assets/images/qordy_app_icon.png'" />
+        <div class="brand-meta">
+          <div class="brand-title" id="hdrStoreName">Cadde Cafe &amp; Market</div>
+          <div class="brand-subtitle">
+            <span class="tenant-code-badge" id="hdrBranch">Merkez Şube</span> • Kasa: <span id="hdrRegisterId">#1</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Group 1: SATIŞ & KASA -->
-    <div class="nav-section-title">SATIŞ & KASA</div>
+    <!-- Group 1: SATIŞ & İŞLEMLER -->
+    <div class="nav-section-title">SATIŞ &amp; İŞLEMLER</div>
     <ul class="nav-list">
       <li class="nav-item active" onclick="switchMainScreen('pos')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
         <span>Kasa Satışı (POS)</span>
       </li>
       <li class="nav-item" onclick="switchMainScreen('transactions')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-        <span>İşlemler & Fiş İade</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>İşlemler &amp; Fiş İade</span>
       </li>
       <li class="nav-item" onclick="switchMainScreen('registers')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-        <span>Kasa & Vardiya / X-Raporu</span>
+        <span>Kasa &amp; Vardiya / X-Raporu</span>
       </li>
     </ul>
 
     <!-- Group 2: ÜRÜN & STOK -->
-    <div class="nav-section-title">ÜRÜN & STOK</div>
+    <div class="nav-section-title">ÜRÜN &amp; STOK</div>
     <ul class="nav-list">
       <li class="nav-item" onclick="switchMainScreen('products')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-        <span>Ürün & Fiyat Kataloğu</span>
+        <span>Ürün &amp; Fiyat Kataloğu</span>
       </li>
       <li class="nav-item" onclick="switchMainScreen('receiving')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
-        <span>Mal Kabul & İrsaliye</span>
+        <span>Mal Kabul &amp; İrsaliye</span>
       </li>
       <li class="nav-item" onclick="switchMainScreen('stock')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
@@ -62,7 +62,7 @@
       </li>
       <li class="nav-item" onclick="switchMainScreen('wastes')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-        <span>Fire & Zayi Takibi</span>
+        <span>Fire &amp; Zayi Takibi</span>
       </li>
       <li class="nav-item" onclick="switchMainScreen('labels')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
@@ -71,7 +71,7 @@
     </ul>
 
     <!-- Group 3: MÜŞTERİ & CARİ -->
-    <div class="nav-section-title">MÜŞTERİ & CARİ</div>
+    <div class="nav-section-title">MÜŞTERİ &amp; CARİ</div>
     <ul class="nav-list">
       <li class="nav-item" onclick="switchMainScreen('customers')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -79,12 +79,12 @@
       </li>
       <li class="nav-item" onclick="switchMainScreen('campaigns')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path><circle cx="12" cy="12" r="4"></circle></svg>
-        <span>Kampanyalar & Kuponlar</span>
+        <span>Kampanyalar &amp; Kuponlar</span>
       </li>
     </ul>
 
-    <!-- Group 4: RAPORLAR & DONANIM -->
-    <div class="nav-section-title">RAPORLAR & AYARLAR</div>
+    <!-- Group 4: RAPORLAR & AYARLAR -->
+    <div class="nav-section-title">RAPORLAR &amp; AYARLAR</div>
     <ul class="nav-list">
       <li class="nav-item" onclick="switchMainScreen('reports')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
@@ -96,7 +96,7 @@
       </li>
       <li class="nav-item" onclick="openTerminalConfigModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-        <span>💳 EFT-POS Entegrasyonu</span>
+        <span>EFT-POS Entegrasyonu</span>
       </li>
       <li class="nav-item" onclick="openParkedCartsModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
@@ -104,7 +104,7 @@
       </li>
       <li class="nav-item" onclick="openCustomerDisplayTab()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-        <span>📺 2. Müşteri Ekranı</span>
+        <span>2. Müşteri Ekranı</span>
       </li>
     </ul>
 
@@ -136,7 +136,7 @@
           </div>
         </div>
         <div class="brand-legal-text">
-          QORDY Esnaf POS v3.0 • Rust Core<br>Pofuduk Dijital Medya & Yazılım Ltd.
+          QORDY Esnaf POS v3.0 • Rust Core<br>Pofuduk Dijital Medya &amp; Yazılım Ltd.
         </div>
       </div>
     </div>
@@ -174,7 +174,7 @@
             <tbody id="cartTableBody"></tbody>
           </table>
           <div id="cartEmptyMsg" style="padding:50px 20px; text-align:center; color:var(--text-secondary); font-size:13px;">
-            <div style="font-size:32px; margin-bottom:10px;">🛒</div>
+            <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 10px auto; opacity:0.35; display:block;"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
             Sepetiniz şu anda boş.<br/>Barkod okutun veya sağdaki hızlı ürünlere tıklayın.
           </div>
         </div>
@@ -232,7 +232,7 @@
             type="text"
             id="posBarcodeField"
             class="barcode-input-field"
-            placeholder="🔍 Barkod okutun veya ürün adı arayın (Enter)..."
+            placeholder="Barkod okutun veya ürün adı arayın (Enter)..."
             autocomplete="off"
             autofocus
           />
@@ -248,12 +248,18 @@
     <div class="screen-view" id="screen-products">
       <div class="view-header">
         <div>
-          <h2 class="view-title">📦 Ürün & Fiyat Kataloğu</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Ürün &amp; Fiyat Kataloğu
+          </h2>
           <p class="view-subtitle">Çevrimdışı SQLite veritabanındaki tüm barkodlu ürünler, fiyatlar ve stok adetleri</p>
         </div>
         <div class="header-actions-group">
           <button class="btn-apple" onclick="openNewProductModal()">+ Yeni Ürün Ekle</button>
-          <button class="btn-top-action" onclick="Views.loadProducts()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadProducts()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
 
@@ -280,36 +286,16 @@
     <!-- SCREEN 3: STOK SAYIM -->
     <div class="screen-view stock-layout" id="screen-stock">
       <div class="apple-card" style="display:flex; flex-direction:column; gap:14px; height:100%;">
-        <div style="font-size:16px; font-weight:700; color:var(--text-primary);">📋 Sayım Seansları</div>
-        <button class="btn-apple" onclick="openNewStockSessionModal()">+ Yeni Sayım Başlat</button>
-        <div style="flex:1; overflow-y:auto; border:1px solid var(--card-border); border-radius:var(--radius-sm); padding:6px;" id="stockSessionsList"></div>
+        <div style="font-size:16px; font-weight:700; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          Sayım Seansları
+        </div>
+        <button class="btn-apple" onclick="Views.openNewStockSessionModal()">+ Yeni Sayım Başlat</button>
+        <div style="flex:1; overflow-y:auto; border:1px solid var="card-border"; border-radius:var(--radius-sm); padding:6px;" id="stockSessionsList"></div>
       </div>
-      <div class="apple-card" style="display:flex; flex-direction:column; gap:14px; height:100%;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-size:16px; font-weight:700; color:var(--text-primary);" id="activeSessionTitle">Seans Seçilmedi</div>
-            <div style="font-size:12px; color:var(--text-secondary);">Barkod okutarak sayılan adetleri ekleyin</div>
-          </div>
-          <button class="btn-apple" style="background:var(--green);" id="btnCommitSession" onclick="Views.commitActiveSession()">✅ Sayımı Tamamla & Stokları Güncelle</button>
-        </div>
-        <div style="display:flex; gap:10px;">
-          <input type="text" id="stockBarcodeScanInput" class="apple-input" placeholder="Barkod okutun..." onkeydown="if(event.key==='Enter') Views.scanStockItem(this.value)">
-          <input type="number" id="stockScanQtyInput" class="apple-input" value="1" style="width:90px;" placeholder="Adet">
-          <button class="btn-apple btn-secondary" onclick="Views.scanStockItem(document.getElementById('stockBarcodeScanInput').value)">Ekle</button>
-        </div>
-        <div class="table-container" style="flex:1;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Barkod</th>
-                <th>Ürün</th>
-                <th>Mevcut Sistem Stok</th>
-                <th>Sayılan Adet</th>
-                <th>Fark</th>
-              </tr>
-            </thead>
-            <tbody id="stockItemsTableBody"></tbody>
-          </table>
+      <div class="apple-card" id="stockSessionDetail" style="display:flex; flex-direction:column; gap:14px; height:100%;">
+        <div style="color:var(--text-secondary); text-align:center; padding:48px;">
+          Lütfen sol taraftan bir sayım seansı seçin veya yeni bir sayım başlatın.
         </div>
       </div>
     </div>
@@ -318,12 +304,18 @@
     <div class="screen-view" id="screen-customers">
       <div class="view-header">
         <div>
-          <h2 class="view-title">📒 Veresiye Defteri (Cari Hesaplar)</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            Veresiye Defteri (Cari Hesaplar)
+          </h2>
           <p class="view-subtitle">Müşteri veresiye bakiyeleri, ödeme geçmişi ve tahsilat makbuzları</p>
         </div>
         <div class="header-actions-group">
           <button class="btn-apple" onclick="openNewCustomerModal()">+ Yeni Müşteri Kaydı</button>
-          <button class="btn-top-action" onclick="Views.loadCustomers()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadCustomers()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -347,16 +339,25 @@
     <div class="screen-view" id="screen-reports">
       <div class="view-header">
         <div>
-          <h2 class="view-title">📊 Gün Sonu Z-Raporu & Mali Özet</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            Gün Sonu Z-Raporu &amp; Mali Özet
+          </h2>
           <p class="view-subtitle">Günün toplam cirosu, KDV dökümü, ödeme türü kırılımları ve kasa kapanış özeti</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-apple" onclick="window.print()">🖨️ Z-Raporu Yazdır</button>
-          <button class="btn-top-action" onclick="fetchAndDisplayZReport()">🔄 Yenile</button>
+          <button class="btn-apple" onclick="window.print()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Z-Raporu Yazdır
+          </button>
+          <button class="btn-top-action" onclick="Views.fetchAndDisplayZReport()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="apple-card" style="max-width:580px; margin:0 auto; width:100%;">
-        <div id="zReportContainer" style="font-family:monospace; font-size:13px; line-height:1.6; white-space:pre-wrap;">Rapor yükleniyor...</div>
+        <div id="zReportDisplayArea" style="font-family:monospace; font-size:13px; line-height:1.6; white-space:pre-wrap;">Rapor yükleniyor...</div>
       </div>
     </div>
 
@@ -364,12 +365,21 @@
     <div class="screen-view" id="screen-transactions">
       <div class="view-header">
         <div>
-          <h2 class="view-title">🧾 Satış İşlemleri & Kalem İadesi</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Satış İşlemleri &amp; Kalem İadesi
+          </h2>
           <p class="view-subtitle">Tamamlanan satış fişleri, tahsilat detayları ve kalem bazlı iade işlemleri</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-top-action" onclick="Views.loadTransactions()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadTransactions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-bottom:12px;">
+        <input type="text" id="transactionsSearch" class="apple-input" placeholder="Fiş numarası veya tarih ara..." oninput="Views.filterTransactions()" style="max-width:340px;">
       </div>
       <div class="table-container">
         <table class="data-table">
@@ -393,12 +403,18 @@
     <div class="screen-view" id="screen-wastes">
       <div class="view-header">
         <div>
-          <h2 class="view-title">🗑️ Fire & Zayi Takibi</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Fire &amp; Zayi Takibi
+          </h2>
           <p class="view-subtitle">Hasarlı, son kullanma tarihi geçmiş veya bozulan ürünlerin otomatik stok düşüm kayıtları</p>
         </div>
         <div class="header-actions-group">
           <button class="btn-apple" onclick="Views.openNewWasteModal()">+ Yeni Fire Kaydı</button>
-          <button class="btn-top-action" onclick="Views.loadWastes()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadWastes()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -422,41 +438,44 @@
     <div class="screen-view" id="screen-labels">
       <div class="view-header">
         <div>
-          <h2 class="view-title">🏷️ Raf & Fiyat Etiketi Basım Kuyruğu</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+            Raf &amp; Fiyat Etiketi Basım Kuyruğu
+          </h2>
           <p class="view-subtitle">Fiyatı veya KDV oranı değişen ürünlerin termal etiket yazıcıya gönderilme kuyruğu</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-apple" onclick="Views.printAllLabels()">🖨️ Tüm Etiketleri Yazdır</button>
-          <button class="btn-top-action" onclick="Views.loadShelfLabels()">🔄 Yenile</button>
+          <button class="btn-apple" onclick="Views.printAllLabels()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            Tüm Etiketleri Yazdır
+          </button>
+          <button class="btn-top-action" onclick="Views.loadShelfLabels()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
-      <div class="table-container">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Barkod</th>
-              <th>Ürün Adı</th>
-              <th>Satış Fiyatı</th>
-              <th>Birim</th>
-              <th>Değişim Tarihi</th>
-              <th style="text-align:right;">İşlem</th>
-            </tr>
-          </thead>
-          <tbody id="labelsTableBody"></tbody>
-        </table>
-      </div>
+      <div id="shelfLabelsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px; margin-top:14px;"></div>
+      <div style="display:none;"><tbody id="labelsTableBody"></tbody></div>
     </div>
 
     <!-- SCREEN 9: NAKİT AVANS / MASRAF -->
     <div class="screen-view" id="screen-cash">
       <div class="view-header">
         <div>
-          <h2 class="view-title">💰 Kasa Avans & Nakit Giriş/Çıkış</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Kasa Avans &amp; Nakit Giriş/Çıkış
+          </h2>
           <p class="view-subtitle">Kasaya para koyma (avans/bozuk para) ve kasadan para çekme (gider/ödeme) kayıtları</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-apple" onclick="Views.openCashMovementModal()">+ Yeni Nakit Hareketi</button>
-          <button class="btn-top-action" onclick="Views.loadCashMovements()">🔄 Yenile</button>
+          <button class="btn-apple" onclick="Views.openCashMovementModal('IN')">+ Nakit Giriş (Avans)</button>
+          <button class="btn-secondary" onclick="Views.openCashMovementModal('OUT')">- Nakit Çıkış (Masraf)</button>
+          <button class="btn-top-action" onclick="Views.loadCashMovements()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -479,12 +498,19 @@
     <div class="screen-view" id="screen-receiving">
       <div class="view-header">
         <div>
-          <h2 class="view-title">📥 Mal Kabul & Tedarikçi İrsaliye Girişi</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
+            Mal Kabul &amp; Tedarikçi İrsaliye Girişi
+          </h2>
           <p class="view-subtitle">Tedarikçi faturaları ve irsaliyeleri ile yerel depoya ürün alımı ve stok arttırımı</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-apple" onclick="Views.openNewReceivingModal()">+ Yeni Mal Kabul Girişi</button>
-          <button class="btn-top-action" onclick="Views.loadReceiving()">🔄 Yenile</button>
+          <button class="btn-apple" onclick="Views.openNewGoodsReceiptModal()">+ Yeni Mal Kabul Girişi</button>
+          <button class="btn-secondary" onclick="Views.openNewSupplierModal()">+ Tedarikçi Tanımla</button>
+          <button class="btn-top-action" onclick="Views.loadReceiving()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -509,12 +535,18 @@
     <div class="screen-view" id="screen-campaigns">
       <div class="view-header">
         <div>
-          <h2 class="view-title">🎯 Kampanyalar, İndirimler & Kuponlar</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path><circle cx="12" cy="12" r="4"></circle></svg>
+            Kampanyalar, İndirimler &amp; Kuponlar
+          </h2>
           <p class="view-subtitle">Sepet tutar indirimleri, yüzde promosyonları ve X Al Y Öde kampanya kuralları</p>
         </div>
         <div class="header-actions-group">
           <button class="btn-apple" onclick="Views.openNewCampaignModal()">+ Yeni Kampanya Tanımla</button>
-          <button class="btn-top-action" onclick="Views.loadCampaigns()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadCampaigns()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -539,12 +571,18 @@
     <div class="screen-view" id="screen-transfers">
       <div class="view-header">
         <div>
-          <h2 class="view-title">🏢 Şubeler Arası Mal Sevkıyatı & Transfer</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="22.01"></line><line x1="15" y1="22" x2="15" y2="22.01"></line><line x1="12" y1="18" x2="12" y2="18.01"></line></svg>
+            Şubeler Arası Mal Sevkıyatı &amp; Transfer
+          </h2>
           <p class="view-subtitle">Merkez ve şubeler arasında sevk irsaliyeleri oluşturun, yoldaki araçları takip edin</p>
         </div>
         <div class="header-actions-group">
           <button class="btn-apple" onclick="Views.openNewTransferModal()">+ Yeni Şube Sevkıyatı</button>
-          <button class="btn-top-action" onclick="Views.loadTransfers()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.loadTransfers()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div class="table-container">
@@ -569,12 +607,21 @@
     <div class="screen-view" id="screen-registers">
       <div class="view-header">
         <div>
-          <h2 class="view-title">💵 Kasa & Vardiya / X-Raporu / Kasa Sayımı</h2>
+          <h2 class="view-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            Kasa &amp; Vardiya / X-Raporu / Kasa Sayımı
+          </h2>
           <p class="view-subtitle">Kasiyer vardiya açılışı, çekmece devir nakdi, ara kasa X-raporu ve gün sonu kasa farkı denetimi</p>
         </div>
         <div class="header-actions-group">
-          <button class="btn-top-action" onclick="Views.showXReport()">📄 X-Raporu Al (Ara Kasa)</button>
-          <button class="btn-top-action" onclick="Views.loadShiftStatus()">🔄 Yenile</button>
+          <button class="btn-top-action" onclick="Views.showXReport()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            X-Raporu Al (Ara Kasa)
+          </button>
+          <button class="btn-top-action" onclick="Views.loadShiftStatus()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Yenile
+          </button>
         </div>
       </div>
       <div id="shiftStatusContainer" style="display:flex; flex-direction:column; gap:16px;"></div>
@@ -587,7 +634,10 @@
   <!-- Nakit Ödeme Modalı -->
   <div class="modal-overlay" id="cashModal">
     <div class="modal-window">
-      <div class="modal-heading">Nakit Ödeme & Para Üstü</div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        Nakit Ödeme &amp; Para Üstü
+      </div>
       <div style="background:var(--bg-subtle); padding:16px; border-radius:12px; text-align:right; border:1px solid var(--card-border);">
         <div style="font-size:12px; color:var(--text-secondary);">Ödenecek Tutar</div>
         <div style="font-size:28px; font-weight:800; color:var(--accent);" id="cashModalDue">0.00 ₺</div>
@@ -608,7 +658,7 @@
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn-secondary" style="flex:1;" onclick="closeModal('cashModal')">İptal</button>
-        <button class="btn-checkout btn-cash" style="flex:2; font-size:13px; padding:12px;" onclick="finalizeCashSale()">SATIŞI ONAYLA & FİŞ BAS</button>
+        <button class="btn-checkout btn-cash" style="flex:2; font-size:13px; padding:12px;" onclick="finalizeCashSale()">SATIŞI ONAYLA &amp; FİŞ BAS</button>
       </div>
     </div>
   </div>
@@ -616,8 +666,11 @@
   <!-- Bekleyen Sepetler Modalı -->
   <div class="modal-overlay" id="parkedCartsModal">
     <div class="modal-window" style="max-width:540px;">
-      <div class="modal-heading">⏸️ Beklemeye Alınan Sepetler</div>
-      <div style="max-height:300px; overflow-y:auto;" id="parkedCartsList"></div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        Bekletilen Sepetler (Park)
+      </div>
+      <div style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;" id="parkedListContainer"></div>
       <div style="text-align:right; margin-top:10px;">
         <button class="btn-secondary" onclick="closeModal('parkedCartsModal')">Kapat</button>
       </div>
@@ -625,14 +678,17 @@
   </div>
 
   <!-- Veresiye Müşteri Seçim Modalı -->
-  <div class="modal-overlay" id="veresiyeModal">
+  <div class="modal-overlay" id="veresiyeSelectModal">
     <div class="modal-window" style="max-width:560px;">
-      <div class="modal-heading">📒 Veresiye Satış - Müşteri Seç</div>
-      <input type="text" id="veresiyeSearchInput" class="form-input" placeholder="Müşteri adı veya telefon ara..." oninput="filterVeresiyeList()">
-      <div style="max-height:260px; overflow-y:auto; border:1px solid var(--card-border); border-radius:var(--radius-sm); margin-top:8px;" id="veresiyeModalList"></div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+        Veresiye Satış - Müşteri Seç
+      </div>
+      <input type="text" id="veresiyeSearch" class="form-input" placeholder="Müşteri adı veya telefon ara..." oninput="App.filterVeresiyeList()">
+      <div style="max-height:260px; overflow-y:auto; border:1px solid var(--card-border); border-radius:var(--radius-sm); margin-top:8px; display:flex; flex-direction:column; gap:6px; padding:6px;" id="veresiyeModalList"></div>
       <div style="display:flex; justify-content:space-between; margin-top:10px;">
-        <button class="btn-secondary" onclick="closeModal('veresiyeModal')">Vazgeç</button>
-        <button class="btn-apple" onclick="closeModal('veresiyeModal'); openNewCustomerModal()">+ Yeni Müşteri Ekle</button>
+        <button class="btn-secondary" onclick="closeModal('veresiyeSelectModal')">Vazgeç</button>
+        <button class="btn-apple" onclick="closeModal('veresiyeSelectModal'); Views.openNewCustomerModal()">+ Yeni Müşteri Ekle</button>
       </div>
     </div>
   </div>
@@ -640,10 +696,17 @@
   <!-- Yeni Ürün Modalı -->
   <div class="modal-overlay" id="newProductModal">
     <div class="modal-window">
-      <div class="modal-heading">📦 Yeni Ürün Tanımla</div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline></svg>
+        Yeni Ürün Tanımla
+      </div>
       <div class="form-group">
         <label>Barkod (EAN-13 veya Terazi Kodu):</label>
-        <input type="text" id="npBarcode" class="form-input" placeholder="8690000000000" />
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="npBarcode" class="form-input" placeholder="8690000000000" oninput="Views.checkNationalCatalogMatch(this.value)" />
+          <button type="button" class="btn-top-action" onclick="Views.checkNationalCatalogMatch(document.getElementById('npBarcode').value)">Sorgula</button>
+        </div>
+        <div id="npCatalogMatchBadge" style="font-size:12px; margin-top:4px; font-weight:600; color:var(--accent); min-height:16px;"></div>
       </div>
       <div class="form-group">
         <label>Ürün Adı:</label>
@@ -659,36 +722,38 @@
           <input type="number" step="0.01" id="npCost" class="form-input" placeholder="0.00" />
         </div>
       </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Kategori:</label>
+          <input type="text" id="npCategory" class="form-input" placeholder="Gıda, İçecek vb." />
+        </div>
         <div class="form-group">
           <label>KDV Oranı (%):</label>
           <select id="npVat" class="form-input">
             <option value="1">%1 (Temel Ekmek/Un)</option>
             <option value="10" selected>%10 (Gıda / Temizlik)</option>
-            <option value="20">%20 (Genel Standart)</option>
+            <option value="20">%20 (Standart / Hizmet)</option>
           </select>
         </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div class="form-group">
-          <label>Birim:</label>
+          <label>Satış Birimi:</label>
           <select id="npUnit" class="form-input">
             <option value="adet">Adet</option>
-            <option value="kg">Kilogram (kg)</option>
-            <option value="gram">Gram (gr)</option>
+            <option value="kg">Kilogram (Kg)</option>
+            <option value="lt">Litre (Lt)</option>
             <option value="paket">Paket</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Açılış Stok:</label>
-          <input type="number" step="0.1" id="npStock" class="form-input" value="10" />
+          <label>Başlangıç Stok Adedi:</label>
+          <input type="number" id="npStock" class="form-input" value="100" />
         </div>
-      </div>
-      <div class="form-group">
-        <label>Kategori:</label>
-        <input type="text" id="npCategory" class="form-input" placeholder="Gıda, İçecek, Manav..." />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px;">
         <button class="btn-secondary" onclick="closeModal('newProductModal')">Vazgeç</button>
-        <button class="btn-apple" onclick="saveNewProduct()">Ürünü Kaydet</button>
+        <button class="btn-apple" onclick="Views.saveNewProduct()">Ürünü Kaydet</button>
       </div>
     </div>
   </div>
@@ -696,7 +761,10 @@
   <!-- Yeni Müşteri Modalı -->
   <div class="modal-overlay" id="newCustomerModal">
     <div class="modal-window">
-      <div class="modal-heading">📒 Yeni Müşteri (Veresiye Cari)</div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path></svg>
+        Yeni Cari Müşteri Kaydı
+      </div>
       <div class="form-group">
         <label>Müşteri Adı Soyadı:</label>
         <input type="text" id="ncName" class="form-input" placeholder="Ahmet Yılmaz" />
@@ -711,86 +779,175 @@
       </div>
       <div class="form-group">
         <label>Not / Adres:</label>
-        <input type="text" id="ncNotes" class="form-input" placeholder="Bakkalın karşısındaki apartman daire 4" />
+        <input type="text" id="ncNote" class="form-input" placeholder="Bakkalın karşısındaki apartman daire 4" />
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px;">
         <button class="btn-secondary" onclick="closeModal('newCustomerModal')">Vazgeç</button>
-        <button class="btn-apple" onclick="saveNewCustomer()">Müşteriyi Kaydet</button>
+        <button class="btn-apple" onclick="Views.saveNewCustomer()">Müşteriyi Kaydet</button>
       </div>
     </div>
   </div>
 
-  <!-- Müşteri Cari Ekstre Modalı -->
-  <div class="modal-overlay" id="customerLedgerModal">
-    <div class="modal-window" style="max-width:620px;">
-      <div class="modal-heading" id="clModalTitle">Müşteri Hesap Ekstresi</div>
-      <div style="display:flex; justify-content:space-between; background:var(--bg-subtle); padding:14px; border-radius:10px; border:1px solid var(--card-border);">
-        <div>
-          <div style="font-size:12px; color:var(--text-secondary);">Mevcut Bakiye:</div>
-          <div style="font-size:24px; font-weight:800; color:var(--orange);" id="clCurrentBalance">0.00 ₺</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <input type="number" id="clPaymentAmount" class="form-input" placeholder="Tahsilat Tutarı ₺" style="width:140px;">
-          <button class="btn-apple" style="background:var(--green);" onclick="submitCustomerPayment()">Tahsil Et</button>
-        </div>
+  <!-- Tahsilat (Borç Ödemesi) Modalı -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-window">
+      <div class="modal-heading" id="payModalTitle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        Borç Tahsilatı
       </div>
-      <div class="table-container" style="max-height:260px; overflow-y:auto; margin-top:10px;">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Tarih</th>
-              <th>İşlem</th>
-              <th>Borç (+)</th>
-              <th>Alacak (-)</th>
-              <th>Kalan Bakiye</th>
-            </tr>
-          </thead>
-          <tbody id="clLedgerTableBody"></tbody>
-        </table>
-      </div>
-      <div style="text-align:right; margin-top:10px;">
-        <button class="btn-secondary" onclick="closeModal('customerLedgerModal')">Kapat</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- POS Terminal Yapılandırma Modalı -->
-  <div class="modal-overlay" id="terminalConfigModal">
-    <div class="modal-window" style="max-width:540px;">
-      <div class="modal-heading">💳 Fiziki Beko EFT-POS / GMP3 Entegrasyonu</div>
-      <p style="font-size:12px; color:var(--text-secondary); margin-top:-8px;">
-        Tezgahtaki Beko yazar kasa POS cihazına TCP veya Seri Port ile doğrudan bağlanın.
-      </p>
       <div class="form-group">
-        <label>POS Cihaz Modeli & Entegrasyon Türü:</label>
-        <select id="tcMode" class="form-input" onchange="updateTerminalFieldsVisibility()">
-          <option value="MOCK">Sanal Simülatör (Fiziki Cihaz Olmadan Canlı Test)</option>
-          <option value="BEKO_TCP">Beko GMP3 Protokolü (Ağ / Ethernet / Wi-Fi IP)</option>
-          <option value="SERIAL">Seri Port / RS232 / USB Kablolu Bağlantı</option>
+        <label>Tahsil Edilen Tutar (₺):</label>
+        <input type="number" id="payModalAmount" class="form-input" style="font-size:20px; font-weight:800;" placeholder="0.00" step="0.5">
+      </div>
+      <div class="form-group">
+        <label>Tahsilat Notu / Makbuz Açıklaması:</label>
+        <input type="text" id="payModalNote" class="form-input" placeholder="Örn: Kısmi nakit ödeme yapıldı">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('paymentModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2; background:var(--green);" onclick="Views.submitCustomerPayment()">Tahsilatı Kaydet &amp; Fiş Bas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kalem Bazlı İade Modalı -->
+  <div class="modal-overlay" id="refundModal">
+    <div class="modal-window" style="max-width:620px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        Kalem Bazlı Parçalı İade
+      </div>
+      <div style="background:var(--bg-subtle); padding:12px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--card-border);">
+        <div>
+          <span style="font-size:12px; color:var(--text-secondary);">Fiş No: </span>
+          <span id="refundModalReceiptNo" style="font-weight:700; font-family:monospace; color:var(--accent);"></span>
+        </div>
+        <div>
+          <span style="font-size:12px; color:var(--text-secondary);">Orijinal Tutar: </span>
+          <span id="refundModalOriginalTotal" style="font-weight:700; color:var(--text-primary);"></span>
+        </div>
+      </div>
+      <div style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-top:6px;">İade Edilecek Kalemleri Seçin:</div>
+      <div id="refundItemsList" style="max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="form-group">
+        <label>İade Nedeni:</label>
+        <select id="refundReasonSelect" class="form-input">
+          <option value="Müşteri Vazgeçti">Müşteri Vazgeçti / İptal</option>
+          <option value="Hatalı Ürün / Bozuk">Hatalı Ürün / Bozuk / Kusurlu</option>
+          <option value="Yanlış Ürün Okutuldu">Yanlış Ürün / Barkod Hatası</option>
+          <option value="Fiyat İtirazı">Fiyat Uyuşmazlığı</option>
+          <option value="Diğer">Diğer</option>
         </select>
       </div>
-      <div id="tcNetFields" style="display:none; grid-template-columns:2fr 1fr; gap:10px;">
-        <div class="form-group">
-          <label>Cihaz Yerel IP Adresi:</label>
-          <input type="text" id="tcIp" class="form-input" placeholder="192.168.1.150" />
-        </div>
-        <div class="form-group">
-          <label>Port:</label>
-          <input type="number" id="tcPort" class="form-input" value="4444" />
-        </div>
+      <div style="background:var(--bg-subtle); padding:14px 16px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--card-border);">
+        <span style="font-size:14px; font-weight:700;">Toplam İade Tutarı:</span>
+        <span id="refundTotalAmountText" style="font-size:24px; font-weight:800; color:var(--green);">0.00 ₺</span>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('refundModal')">Vazgeç</button>
+        <button class="btn-danger" style="flex:2;" onclick="Views.confirmItemRefund()">İADEYİ ONAYLA &amp; STOK İADE ET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Fire / Zayi Kaydet Modalı -->
+  <div class="modal-overlay" id="newWasteModal">
+    <div class="modal-window">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        Yeni Fire / Zayi Kaydı
       </div>
       <div class="form-group">
-        <label>Zaman Aşımı Süresi (Saniye):</label>
-        <input type="number" id="tcTimeout" class="form-input" value="45" />
+        <label>Barkod veya Ürün:</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="wasteBarcode" class="form-input" style="flex:1;" placeholder="Barkod okutun veya yazın..." onchange="Views.lookupWasteProduct()">
+          <button class="btn-top-action" onclick="Views.lookupWasteProduct()">Bul</button>
+        </div>
+        <div id="wasteProductInfo" style="font-size:12px; color:var(--accent); font-weight:600; min-height:16px;"></div>
       </div>
-      <div style="background:var(--bg-subtle); padding:12px; border-radius:8px; font-size:12px; color:var(--text-secondary); border:1px solid var(--card-border);" id="tcTestResult">
-        Fiziki cihaz olmadan da "Sanal Simülatör" moduyla tüm mali fiş ve kart işlemlerini anında test edebilirsiniz.
+      <div class="form-group">
+        <label>Fire Adedi / Miktarı:</label>
+        <input type="number" id="wasteQuantity" class="form-input" value="1" min="0.1" step="0.5">
       </div>
-      <div style="display:flex; justify-content:space-between; gap:10px; margin-top:12px;">
-        <button class="btn-top-action" onclick="testTerminalConnection()">🔌 Bağlantıyı Test Et</button>
+      <div class="form-group">
+        <label>Zayi Nedeni:</label>
+        <select id="wasteReason" class="form-input">
+          <option value="Son Kullanma Tarihi Geçti">Son Kullanma Tarihi (SKT) Geçti</option>
+          <option value="Kırıldı / Döküldü / Hasarlı">Kırıldı / Döküldü / Hasarlı Ambalaj</option>
+          <option value="Bozuldu / Çürüdü">Bozuldu / Çürüdü (Taze Reyon)</option>
+          <option value="Çalınma / Kayıp">Çalınma / Kayıp Sayım Farkı</option>
+          <option value="Diğer">Diğer</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('newWasteModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2;" onclick="Views.saveWasteRecord()">KAYDET &amp; STOKTAN DÜŞ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kasa Hareketi (Avans / Masraf) Modalı -->
+  <div class="modal-overlay" id="cashMovementModal">
+    <div class="modal-window">
+      <div class="modal-heading" id="cashMovementHeading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        Kasa Nakit Hareketi
+      </div>
+      <input type="hidden" id="cashMovementType" value="IN">
+      <div class="form-group">
+        <label>Tutar (₺):</label>
+        <input type="number" id="cashMovementAmount" class="form-input" style="font-size:20px; font-weight:800;" step="0.5" placeholder="0.00">
+      </div>
+      <div class="form-group">
+        <label>Açıklama / Sebep:</label>
+        <input type="text" id="cashMovementReason" class="form-input" placeholder="Örn: Gün başı bozuk para avansı, dükkan temizlik alımı...">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('cashMovementModal')">İptal</button>
+        <button class="btn-apple" style="flex:2;" id="btnSubmitCashMovement" onclick="Views.submitCashMovement()">KAYDET</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Beko ÖKC & POS Cihazı Ayar Modalı -->
+  <div class="modal-overlay" id="terminalConfigModal">
+    <div class="modal-window" style="max-width:540px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        POS Cihazı &amp; ÖKC Donanım Ayarları
+      </div>
+      <div style="font-size:12px; color:var(--text-secondary); line-height:1.4;">
+        Masa başında veya fiziki cihaz henüz yokken <b>Sanal POS Simülatörü</b> ile birebir banka onayı test edebilir; dükkandaki canlı <b>Beko GMP3 ÖKC</b> cihazınızı yerel ağ üzerinden sisteme bozmadan entegre edebilirsiniz.
+      </div>
+      <div class="form-group">
+        <label>Çalışma Modu:</label>
+        <select id="terminalMode" class="form-input" onchange="updateTerminalFieldsVisibility()">
+          <option value="MOCK">Sanal POS Simülatörü (Test &amp; Geliştirme)</option>
+          <option value="BEKO_TCP">Beko GMP3 ÖKC (Yerel Ağ / TCP-IP)</option>
+        </select>
+      </div>
+      <div id="terminalNetworkFields" style="display:none; flex-direction:column; gap:12px;">
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label>Cihaz IP Adresi:</label>
+            <input type="text" id="terminalHost" class="form-input" placeholder="192.168.1.150">
+          </div>
+          <div class="form-group">
+            <label>Port (GMP3):</label>
+            <input type="number" id="terminalPort" class="form-input" placeholder="9000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Zaman Aşımı (sn):</label>
+          <input type="number" id="terminalTimeout" class="form-input" placeholder="45" value="45">
+        </div>
+      </div>
+      <div id="terminalTestStatus" style="font-size:12px; font-weight:600; min-height:16px; color:var(--accent);"></div>
+      <div style="display:flex; justify-content:space-between; gap:10px;">
+        <button class="btn-top-action" onclick="testTerminalConnection()">Bağlantıyı Test Et</button>
         <div style="display:flex; gap:10px;">
           <button class="btn-secondary" onclick="closeModal('terminalConfigModal')">Kapat</button>
-          <button class="btn-apple" onclick="saveTerminalConfig()">Ayarları Kaydet</button>
+          <button class="btn-apple" onclick="saveTerminalConfig()">Kaydet &amp; Aktif Et</button>
         </div>
       </div>
     </div>
@@ -799,10 +956,13 @@
   <!-- EFT-POS Bekleme Modalı -->
   <div class="modal-overlay" id="eftPosModal">
     <div class="modal-window" style="text-align:center; max-width:440px;">
-      <div style="font-size:42px; margin-bottom:10px;">💳</div>
-      <div class="modal-heading" id="eftPosTitle">POS Cihazına Gönderildi</div>
-      <div style="font-size:13px; color:var(--text-secondary); margin:6px 0;" id="eftPosMsg">Lütfen müşterinin kartı okutmasını / şifre girmesini bekleyin...</div>
-      <div style="font-size:28px; font-weight:800; color:var(--accent); margin:12px 0;" id="eftPosAmount">0.00 ₺</div>
+      <div id="eftPosIcon" style="margin-bottom:12px; display:flex; justify-content:center;">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--accent)" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+      </div>
+      <div class="modal-heading" id="eftPosStatusText" style="justify-content:center;">POS Cihazına Gönderildi</div>
+      <div style="font-size:13px; color:var(--text-secondary); margin:6px 0;" id="eftPosSubtext">Lütfen müşterinin kartı okutmasını / şifre girmesini bekleyin...</div>
+      <div style="font-size:28px; font-weight:800; color:var(--accent); margin:12px 0;" id="eftPosAmountText">0.00 ₺</div>
+      <div style="font-size:11px; color:var(--text-secondary); margin-bottom:8px;" id="eftPosDeviceLabel">Beko GMP3 / Sanal POS</div>
       <div id="eftPosDetails" style="display:none; background:var(--bg-subtle); padding:12px; border-radius:8px; font-size:12px; text-align:left; border:1px solid var(--card-border);"></div>
       <div style="margin-top:14px;">
         <button class="btn-danger" id="eftPosCancelBtn" onclick="closeModal('eftPosModal')">İptal Et</button>
@@ -810,102 +970,177 @@
     </div>
   </div>
 
-  <!-- Parçalı Ödeme Modalı -->
+  <!-- Parçalı / Karma Ödeme Modalı -->
   <div class="modal-overlay" id="splitPayModal">
     <div class="modal-window" style="max-width:520px;">
-      <div class="modal-heading">💳 Parçalı Ödeme Dağıtımı</div>
-      <div style="background:var(--bg-subtle); padding:14px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary);">
-          <span>Toplam Sepet Tutarı:</span>
-          <b id="splitModalTotalDue" style="color:var(--text-primary);">0.00 ₺</b>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        Parçalı &amp; Karma Ödeme
+      </div>
+      <div style="background:var(--bg-subtle); padding:16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--card-border);">
+        <div>
+          <div style="font-size:12px; color:var(--text-secondary);">Ödenecek Toplam Tutar:</div>
+          <div style="font-size:24px; font-weight:800; color:var(--accent);" id="splitTotalDue">0.00 ₺</div>
         </div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-top:4px;">
-          <span>Kalan Kapanacak Tutar:</span>
-          <span id="splitModalRemaining" style="color:var(--orange);">0.00 ₺</span>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-secondary);">Kalan / Fark:</div>
+          <div style="font-size:24px; font-weight:800; color:var(--orange);" id="splitRemainingAmount">0.00 ₺</div>
         </div>
       </div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <div class="form-group" style="margin:0;">
-          <label>💵 Nakit Tutar (₺):</label>
-          <input type="number" step="0.01" id="splitCashInput" class="form-input" value="0.00" oninput="Views.recalcSplitRemaining()">
+
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:10px;">
+        <div class="form-group">
+          <label style="color:var(--green); font-weight:700;">Alınan Nakit Tutar (₺):</label>
+          <input type="number" id="splitCashAmount" class="form-input" step="0.5" placeholder="0.00" oninput="Views.updateSplitCalc()">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label>💳 Kredi Kartı Tutar (₺):</label>
-          <input type="number" step="0.01" id="splitCardInput" class="form-input" value="0.00" oninput="Views.recalcSplitRemaining()">
+        <div class="form-group">
+          <label style="color:var(--accent); font-weight:700;">Kredi Kartı ile Çekilen (₺):</label>
+          <input type="number" id="splitCardAmount" class="form-input" step="0.5" placeholder="0.00" oninput="Views.updateSplitCalc()">
         </div>
-        <div class="form-group" style="margin:0;">
-          <label>📒 Veresiye / Cari Tutar (₺):</label>
+        <div class="form-group">
+          <label style="color:var(--orange); font-weight:700;">Veresiye / Cari Hesaba Yazılan (₺):</label>
           <div style="display:flex; gap:8px;">
-            <input type="number" step="0.01" id="splitVeresiyeInput" class="form-input" value="0.00" oninput="Views.recalcSplitRemaining()" style="flex:1;">
+            <input type="number" id="splitVeresiyeAmount" class="form-input" step="0.5" placeholder="0.00" style="flex:1;" oninput="Views.updateSplitCalc()">
             <select id="splitCustomerSelect" class="form-input" style="flex:1.5;">
-              <option value="">-- Müşteri Seçin --</option>
+              <option value="">-- Müşteri / Cari Seçin --</option>
             </select>
           </div>
         </div>
       </div>
-      <div style="display:flex; justify-content:space-between; gap:10px; margin-top:16px;">
-        <button class="btn-secondary" onclick="closeModal('splitPayModal')">Vazgeç</button>
-        <button class="btn-apple" style="background:linear-gradient(135deg, #8b5cf6, #3b82f6); flex:1;" onclick="Views.submitSplitPayment()">PARÇALI SATIŞI ONAYLA</button>
+
+      <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('splitPayModal')">Vazgeç</button>
+        <button class="btn-apple" id="btnSubmitSplitSale" style="flex:2; background:var(--green);" onclick="Views.submitSplitSale()">SATIŞI TAMAMLA &amp; FİŞ BAS</button>
       </div>
     </div>
   </div>
 
-  <!-- Yeni Mal Kabul Modalı -->
-  <div class="modal-overlay" id="newReceivingModal">
-    <div class="modal-window" style="max-width:640px;">
-      <div class="modal-heading">📥 Yeni Mal Kabul & Fatura Girişi</div>
+  <!-- Yeni Tedarikçi Tanımla Modalı -->
+  <div class="modal-overlay" id="newSupplierModal">
+    <div class="modal-window">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Yeni Tedarikçi Firma Tanımla
+      </div>
+      <div class="form-group">
+        <label>Firma / Tedarikçi Ünvanı:</label>
+        <input type="text" id="nsName" class="form-input" placeholder="Örn: Anadolu Gıda Toptan A.Ş.">
+      </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div class="form-group">
-          <label>Fatura / İrsaliye Seri-No:</label>
-          <input type="text" id="recDocNo" class="form-input" placeholder="GIB2026000001234">
+          <label>Yetkili Kişi:</label>
+          <input type="text" id="nsContact" class="form-input" placeholder="Ahmet Yılmaz">
         </div>
         <div class="form-group">
-          <label>Tedarikçi Firma / Toptancı:</label>
-          <input type="text" id="recSupplierName" class="form-input" placeholder="Örn: Anadolu Gıda Toptan A.Ş.">
+          <label>Telefon:</label>
+          <input type="text" id="nsPhone" class="form-input" placeholder="0216 000 00 00">
         </div>
       </div>
       <div class="form-group">
-        <label>Açıklama / Sevk Notu:</label>
-        <input type="text" id="recNotes" class="form-input" placeholder="Haftalık bakkal kuru gıda sevkiyatı">
+        <label>Vergi Numarası &amp; Dairesi:</label>
+        <input type="text" id="nsTaxInfo" class="form-input" placeholder="Kadıköy VD - 1234567890">
       </div>
-      <div style="border-top:1px solid var(--card-border); padding-top:10px;">
-        <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-primary);">Ürün Kalemi Ekle:</div>
-        <div style="display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:8px; align-items:end;">
-          <div>
-            <label style="font-size:11px; color:var(--text-secondary);">Ürün / Barkod</label>
-            <select id="recItemSelect" class="form-input"></select>
-          </div>
-          <div>
-            <label style="font-size:11px; color:var(--text-secondary);">Miktar (Adet/Kg)</label>
-            <input type="number" step="0.1" id="recItemQty" class="form-input" value="1">
-          </div>
-          <div>
-            <label style="font-size:11px; color:var(--text-secondary);">Birim Maliyet (₺)</label>
-            <input type="number" step="0.01" id="recItemCost" class="form-input" value="0.00">
-          </div>
-          <button class="btn-top-action" style="background:var(--accent); color:white; border:none;" onclick="Views.addReceivingRow()">+ Ekle</button>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <button class="btn-secondary" onclick="closeModal('newSupplierModal')">Vazgeç</button>
+        <button class="btn-apple" onclick="Views.saveNewSupplier()">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Mal Kabul Fişi Modalı -->
+  <div class="modal-overlay" id="newGoodsReceiptModal">
+    <div class="modal-window" style="max-width:780px; max-height:85vh; overflow-y:auto;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="8 17 12 21 16 17"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"></path></svg>
+        Yeni Mal Kabul &amp; Alış İrsaliyesi Girişi
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Tedarikçi Firma:</label>
+          <select id="ngrSupplierSelect" class="form-input"></select>
+        </div>
+        <div class="form-group">
+          <label>İrsaliye / Fatura No:</label>
+          <input type="text" id="ngrInvoiceNo" class="form-input" placeholder="IRS-2026-00123">
         </div>
       </div>
-      <div class="table-container" style="max-height:180px; overflow-y:auto; margin-top:10px;">
+
+      <div style="background:var(--bg-subtle); padding:12px; border-radius:10px; margin:10px 0; border:1px solid var(--card-border);">
+        <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Gelen Ürün Kalemi Okutun / Ekleyin:</div>
+        <div style="display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:8px; align-items:end;">
+          <div>
+            <label style="font-size:11px; color:var(--text-secondary);">Barkod veya Ürün Adı:</label>
+            <input type="text" id="ngrBarcodeField" class="form-input" placeholder="Barkod okutun veya yazın..." onkeydown="if(event.key==='Enter'){event.preventDefault();Views.lookupAndAddReceivingItem();}">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-secondary);">Gelen Miktar:</label>
+            <input type="number" id="ngrQtyField" class="form-input" placeholder="Miktar" value="1" min="0.1" step="1">
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--text-secondary);">Birim Alış Maliyeti (₺):</label>
+            <input type="number" id="ngrCostField" class="form-input" placeholder="Maliyet ₺" step="0.01">
+          </div>
+          <button type="button" class="btn-apple" onclick="Views.lookupAndAddReceivingItem()">+ Ekle</button>
+        </div>
+        <div id="ngrItemLookupStatus" style="font-size:11px; margin-top:4px; color:var(--accent); min-height:16px;"></div>
+      </div>
+
+      <div class="table-container" style="max-height:220px;">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Ürün</th>
+              <th>Ürün Adı</th>
+              <th>Barkod</th>
+              <th>Miktar</th>
+              <th>Birim Maliyet (₺)</th>
+              <th>Satır Toplamı (₺)</th>
+              <th style="width:30px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ngrItemsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-subtle); padding:12px 16px; border-radius:10px; margin-top:10px; border:1px solid var(--card-border);">
+        <span style="font-weight:700;">Toplam Fatura Maliyeti:</span>
+        <span id="ngrGrandTotalText" style="font-size:20px; font-weight:800; color:var(--green);">0.00 ₺</span>
+      </div>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>İrsaliye Notu / Açıklama:</label>
+        <input type="text" id="ngrNotes" class="form-input" placeholder="Toptancı şoförü teslim etti, hasarsız alındı...">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('newGoodsReceiptModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2; background:var(--green);" onclick="Views.submitGoodsReceipt()">İRSALİYEYİ ONAYLA &amp; STOKLARI ARTTIR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- İrsaliye Detay Modalı -->
+  <div class="modal-overlay" id="goodsReceiptDetailModal">
+    <div class="modal-window" style="max-width:680px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        İrsaliye Detayı
+      </div>
+      <div id="receiptDetailHeader" style="background:var(--bg-subtle); padding:12px 16px; border-radius:10px; font-size:13px; line-height:1.6; border:1px solid var(--card-border);"></div>
+      <div class="table-container" style="max-height:240px; margin-top:10px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Ürün Adı</th>
               <th>Miktar</th>
               <th>Birim Maliyet</th>
               <th>Toplam Maliyet</th>
-              <th></th>
             </tr>
           </thead>
-          <tbody id="recItemsListBody"></tbody>
+          <tbody id="receiptDetailItemsBody"></tbody>
         </table>
       </div>
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-        <div style="font-size:14px; font-weight:700;">Toplam: <span id="recGrandTotal" style="color:var(--accent);">0.00 ₺</span></div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn-secondary" onclick="closeModal('newReceivingModal')">Vazgeç</button>
-          <button class="btn-apple" style="background:var(--green);" onclick="Views.submitReceiving()">İrsaliyeyi Kaydet & Stokları Arttır</button>
-        </div>
+      <div style="text-align:right; margin-top:10px;">
+        <button class="btn-secondary" onclick="closeModal('goodsReceiptDetailModal')">Kapat</button>
       </div>
     </div>
   </div>
@@ -913,35 +1148,41 @@
   <!-- Yeni Kampanya Modalı -->
   <div class="modal-overlay" id="newCampaignModal">
     <div class="modal-window">
-      <div class="modal-heading">🎯 Yeni Kampanya & İndirim Kuralı</div>
-      <div class="form-group">
-        <label>Kampanya Kodu (Kasiyer Girişi İçin):</label>
-        <input type="text" id="campCode" class="form-input" placeholder="Örn: ESNAF10" style="text-transform:uppercase;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path><circle cx="12" cy="12" r="4"></circle></svg>
+        Yeni Kampanya &amp; İndirim Kodu
       </div>
-      <div class="form-group">
-        <label>Kampanya Başlığı:</label>
-        <input type="text" id="campName" class="form-input" placeholder="Örn: 200₺ Üzeri %10 Esnaf İndirimi">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Kampanya Kodu (Promosyon):</label>
+          <input type="text" id="ncCode" class="form-input" placeholder="Örn: ESNAF10" style="text-transform:uppercase;">
+        </div>
+        <div class="form-group">
+          <label>Kampanya Başlığı:</label>
+          <input type="text" id="ncCampaignName" class="form-input" placeholder="Örn: Açılış İndirimi %10">
+        </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
         <div class="form-group">
           <label>İndirim Türü:</label>
-          <select id="campType" class="form-input">
-            <option value="PERCENTAGE">Yüzde İndirimi (%)</option>
-            <option value="FIXED_AMOUNT">Sabit Tutar İndirimi (₺)</option>
+          <select id="ncType" class="form-input">
+            <option value="PERCENT">Yüzde İndirimi (%)</option>
+            <option value="AMOUNT">Sabit Tutar İndirimi (₺)</option>
+            <option value="BUY_X_PAY_Y">X Al Y Öde Promosyonu</option>
           </select>
         </div>
         <div class="form-group">
           <label>İndirim Değeri:</label>
-          <input type="number" step="0.1" id="campValue" class="form-input" placeholder="Örn: 10">
+          <input type="number" id="ncValue" class="form-input" placeholder="10.0" step="0.5">
         </div>
       </div>
       <div class="form-group">
         <label>Minimum Sepet Tutarı (₺):</label>
-        <input type="number" step="0.1" id="campMinBasket" class="form-input" value="0.00">
+        <input type="number" id="ncMinSubtotal" class="form-input" value="0.0" step="10">
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:12px;">
-        <button class="btn-secondary" onclick="closeModal('newCampaignModal')">Vazgeç</button>
-        <button class="btn-apple" onclick="Views.submitCampaign()">Kampanyayı Kaydet</button>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('newCampaignModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2; background:var(--green);" onclick="Views.saveNewCampaign()">Kampanyayı Başlat</button>
       </div>
     </div>
   </div>
@@ -949,102 +1190,131 @@
   <!-- Yeni Şube Transferi Modalı -->
   <div class="modal-overlay" id="newTransferModal">
     <div class="modal-window" style="max-width:620px;">
-      <div class="modal-heading">🏢 Yeni Şubeler Arası Mal Sevkıyatı</div>
-      <div class="form-group">
-        <label>Hedef Teslim Alacak Şube:</label>
-        <select id="trToBranchSelect" class="form-input"></select>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="22.01"></line><line x1="15" y1="22" x2="15" y2="22.01"></line><line x1="12" y1="18" x2="12" y2="18.01"></line></svg>
+        Şubeler Arası Mal Transferi Başlat
       </div>
-      <div class="form-group">
-        <label>Sevk İrsaliye Açıklaması / Sürücü:</label>
-        <input type="text" id="trNotes" class="form-input" placeholder="Kadıköy şubesine eksik ürün sevkiyatı">
-      </div>
-      <div style="border-top:1px solid var(--card-border); padding-top:10px;">
-        <div style="font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text-primary);">Sevk Edilecek Kalem:</div>
-        <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:8px; align-items:end;">
-          <div>
-            <label style="font-size:11px; color:var(--text-secondary);">Ürün Seçin</label>
-            <select id="trItemSelect" class="form-input"></select>
-          </div>
-          <div>
-            <label style="font-size:11px; color:var(--text-secondary);">Sevk Adedi</label>
-            <input type="number" step="0.1" id="trItemQty" class="form-input" value="1">
-          </div>
-          <button class="btn-top-action" style="background:var(--accent); color:white; border:none;" onclick="Views.addTransferRow()">+ Ekle</button>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Çıkış Şubesi (Mevcut):</label>
+          <input type="text" id="ntFromBranchDisplay" class="form-input" readonly value="Merkez Şube" style="opacity:0.7;">
+        </div>
+        <div class="form-group">
+          <label>Hedef / Varış Şubesi:</label>
+          <select id="ntToBranchSelect" class="form-input"></select>
         </div>
       </div>
-      <div class="table-container" style="max-height:180px; overflow-y:auto; margin-top:10px;">
+
+      <div style="background:var(--bg-subtle); padding:12px; border-radius:10px; margin:10px 0; border:1px solid var(--card-border);">
+        <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:8px;">Sevk Edilecek Ürün Seçin:</div>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="ntBarcodeField" class="form-input" style="flex:2;" placeholder="Barkod okutun veya ürün adı yazın..." onkeydown="if(event.key==='Enter'){event.preventDefault();Views.addTransferItemRow();}">
+          <input type="number" id="ntQtyField" class="form-input" style="width:100px;" placeholder="Miktar" value="1" min="1" step="1">
+          <button type="button" class="btn-apple" onclick="Views.addTransferItemRow()">+ Kalem Ekle</button>
+        </div>
+        <div id="ntLookupStatus" style="font-size:11px; margin-top:4px; color:var(--accent); min-height:16px;"></div>
+      </div>
+
+      <div class="table-container" style="max-height:180px;">
         <table class="data-table">
           <thead>
             <tr>
               <th>Ürün Adı</th>
-              <th>Miktar</th>
-              <th></th>
+              <th>Barkod</th>
+              <th>Transfer Miktarı</th>
+              <th style="width:30px;"></th>
             </tr>
           </thead>
-          <tbody id="trItemsListBody"></tbody>
+          <tbody id="ntItemsTableBody"></tbody>
         </table>
       </div>
-      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
-        <button class="btn-secondary" onclick="closeModal('newTransferModal')">Vazgeç</button>
-        <button class="btn-apple" onclick="Views.submitTransfer()">Sevkıyatı Başlat & Yola Çıkar</button>
+
+      <div class="form-group" style="margin-top:10px;">
+        <label>Sevk İrsaliye Notu:</label>
+        <input type="text" id="ntNotes" class="form-input" placeholder="Koli adedi, kurye veya araç plakası...">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('newTransferModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2; background:var(--green);" onclick="Views.submitTransfer()">SEVKİYATI ONAYLA &amp; STOKTAN DÜŞ</button>
       </div>
     </div>
   </div>
 
-  <!-- Vardiya Açılış Modalı -->
+  <!-- Vardiya Aç Modalı -->
   <div class="modal-overlay" id="openShiftModal">
     <div class="modal-window">
-      <div class="modal-heading">🟢 Kasa Vardiyası Başlat (Devir Nakdi)</div>
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Vardiya Açılışı (Kasa Devri)
+      </div>
       <div class="form-group">
         <label>Kasiyer Adı:</label>
-        <input type="text" id="shiftCashierNameInput" class="form-input" value="Ahmet Kasiyer">
+        <input type="text" id="osCashierName" class="form-input" value="Ahmet Kasiyer">
       </div>
       <div class="form-group">
-        <label>Çekmecedeki Açılış Devir Nakit Tutarı (₺):</label>
-        <input type="number" step="0.01" id="shiftOpeningFloatInput" class="form-input" value="500.00" style="font-size:18px; font-weight:700;">
+        <label>Kasa Başlangıç Devir Nakdi (Float ₺):</label>
+        <input type="number" id="osOpeningFloat" class="form-input" style="font-size:22px; font-weight:800;" value="500.00" step="50">
       </div>
-      <div style="display:flex; gap:10px; margin-top:14px;">
+      <div class="form-group">
+        <label>Açılış Notu:</label>
+        <input type="text" id="osNotes" class="form-input" placeholder="Sabah vardiyası bozuk para teslim alındı">
+      </div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
         <button class="btn-secondary" style="flex:1;" onclick="closeModal('openShiftModal')">Vazgeç</button>
         <button class="btn-apple" style="flex:2; background:var(--green);" onclick="Views.submitOpenShift()">VARDİYAYI BAŞLAT</button>
       </div>
     </div>
   </div>
 
-  <!-- Vardiya Kapanış & Kasa Sayım Modalı -->
+  <!-- Vardiya Kapat & Kasa Sayımı Modalı -->
   <div class="modal-overlay" id="closeShiftModal">
-    <div class="modal-window">
-      <div class="modal-heading">🔴 Gün Sonu Kasa Kapanışı & Sayım</div>
-      <div style="background:var(--bg-subtle); padding:14px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:12px;">
-        <div style="font-size:12px; color:var(--text-secondary);">Sistemde Çekmecede Olması Gereken Nakit:</div>
-        <div style="font-size:24px; font-weight:800; color:var(--accent);" id="csExpectedCashVal">0.00 ₺</div>
+    <div class="modal-window" style="max-width:520px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        Gün Sonu Vardiya Kapatma &amp; Kasa Sayımı
       </div>
-      <div class="form-group">
-        <label>Çekmecede Sayılan Fiili Nakit (₺):</label>
-        <input type="number" step="0.01" id="csCountedCashInput" class="form-input" style="font-size:18px; font-weight:700;" oninput="Views.recalcCloseShiftDiff()">
+      <div style="background:var(--bg-subtle); padding:16px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid var(--card-border);">
+        <div>
+          <div style="font-size:12px; color:var(--text-secondary);">Sistemde Olması Gereken Nakit:</div>
+          <div style="font-size:24px; font-weight:800; color:var(--accent);" id="csExpectedCashDisplay">0.00 ₺</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-secondary);">Kasa Farkı:</div>
+          <div style="font-size:24px; font-weight:800;" id="csDiscrepancyDisplay">0.00 ₺</div>
+        </div>
       </div>
-      <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; margin-bottom:12px;">
-        <span>Kasa Farkı (Açık / Fazla):</span>
-        <span id="csDiffVal" style="color:var(--text-primary);">0.00 ₺</span>
+
+      <div class="form-group" style="margin-top:14px;">
+        <label style="font-size:14px; font-weight:700;">Çekmecede Sayılan Fiziki Nakit (₺):</label>
+        <input type="number" id="csActualCashInput" class="form-input" style="font-size:24px; font-weight:800;" placeholder="0.00" step="0.5" oninput="Views.updateCloseShiftCalc()">
       </div>
       <div class="form-group">
         <label>Kapanış Notu / Sayım Açıklaması:</label>
         <input type="text" id="csNotesInput" class="form-input" placeholder="Akşam sayımı yapıldı, kasa devredildi">
       </div>
+
       <div style="display:flex; gap:10px; margin-top:14px;">
         <button class="btn-secondary" style="flex:1;" onclick="closeModal('closeShiftModal')">Vazgeç</button>
-        <button class="btn-danger" style="flex:2;" onclick="Views.submitCloseShift()">VARDİYAYI KAPAT & Z-RAPORU AL</button>
+        <button class="btn-danger" style="flex:2;" onclick="Views.submitCloseShift()">VARDİYAYI KAPAT &amp; Z-RAPORU AL</button>
       </div>
     </div>
   </div>
 
   <!-- X-Raporu Modal -->
   <div class="modal-overlay" id="xReportModal">
-    <div class="modal-window" style="width:480px;">
-      <div class="modal-heading">📄 Gün İçi X-Raporu (Ara Kasa)</div>
-      <div id="xReportReceiptArea" style="background:var(--bg-subtle); padding:20px; border-radius:12px; font-family:monospace; font-size:12px; line-height:1.5; border:1px solid var(--card-border);"></div>
+    <div class="modal-window" style="max-width:480px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        Gün İçi X-Raporu (Ara Kasa)
+      </div>
+      <div id="xReportReceiptArea" style="background:var(--bg-subtle); padding:20px; border-radius:12px; font-family:monospace; font-size:12px; line-height:1.5; border:1px solid var(--card-border); max-height:360px; overflow-y:auto;"></div>
       <div style="display:flex; gap:10px; margin-top:12px;">
         <button class="btn-secondary" style="flex:1;" onclick="closeModal('xReportModal')">Kapat</button>
-        <button class="btn-apple" style="flex:1.5;" onclick="window.print()">🖨️ Raporu Yazdır</button>
+        <button class="btn-apple" style="flex:1.5;" onclick="window.print()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+          Raporu Yazdır
+        </button>
       </div>
     </div>
   </div>
@@ -1053,10 +1323,10 @@
   <div class="toast-pill" id="globalToast"></div>
 
   <!-- Modular Scripts -->
-  <script src="/assets/js/api.js?v=20261020_4"></script>
-  <script src="/assets/js/cart.js?v=20261020_4"></script>
-  <script src="/assets/js/terminal.js?v=20261020_4"></script>
-  <script src="/assets/js/views.js?v=20261020_4"></script>
-  <script src="/assets/js/app.js?v=20261020_4"></script>
+  <script src="/assets/js/api.js?v=20261020_3"></script>
+  <script src="/assets/js/cart.js?v=20261020_3"></script>
+  <script src="/assets/js/terminal.js?v=20261020_3"></script>
+  <script src="/assets/js/views.js?v=20261020_3"></script>
+  <script src="/assets/js/app.js?v=20261020_3"></script>
 </body>
 </html>

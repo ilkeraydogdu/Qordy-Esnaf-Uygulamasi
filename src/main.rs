@@ -126,7 +126,7 @@ fn main() -> Result<()> {
 
     // Webview oluştur
     #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
-    let _webview = WebViewBuilder::new()
+    let webview = WebViewBuilder::new()
         .with_url(&pos_url)
         .build(&window)?;
 
@@ -134,6 +134,8 @@ fn main() -> Result<()> {
 
     // Event Loop (Ana UI iş parçacığında çalışır)
     event_loop.run(move |event, _, control_flow| {
+        #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
+        let _ = &webview;
         *control_flow = ControlFlow::Wait;
 
         if let Event::WindowEvent { event, .. } = event {

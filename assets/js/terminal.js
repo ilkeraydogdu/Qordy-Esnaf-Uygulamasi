@@ -22,17 +22,17 @@ const Terminal = {
 
   async testConnection() {
     const statusDiv = document.getElementById('terminalTestStatus');
-    statusDiv.innerHTML = '<span style="color:var(--apple-blue);">🔌 Cihaz bağlantısı sınanıyor...</span>';
+    statusDiv.innerHTML = '<span style="color:var(--accent);">Cihaz bağlantısı sınanıyor...</span>';
 
     try {
       const data = await Api.testTerminal();
       if (data.connected) {
-        statusDiv.innerHTML = `<span style="color:var(--apple-green);">✅ BAŞARILI: ${data.mode} erişilebilir ve hazır.</span>`;
+        statusDiv.innerHTML = `<span style="color:var(--green); font-weight:700;">BAŞARILI: ${data.mode} erişilebilir ve hazır.</span>`;
       } else {
-        statusDiv.innerHTML = `<span style="color:var(--apple-red);">⚠️ BAĞLANILAMADI: ${data.mode} yanıt vermedi. IP/Portu kontrol ediniz.</span>`;
+        statusDiv.innerHTML = `<span style="color:var(--red); font-weight:700;">BAĞLANILAMADI: ${data.mode} yanıt vermedi. IP/Portu kontrol ediniz.</span>`;
       }
     } catch (e) {
-      statusDiv.innerHTML = '<span style="color:var(--apple-red);">Bağlantı testi sırasında hata oluştu.</span>';
+      statusDiv.innerHTML = '<span style="color:var(--red);">Bağlantı testi sırasında hata oluştu.</span>';
     }
   },
 
@@ -49,7 +49,7 @@ const Terminal = {
         port: port,
         timeout_seconds: timeout
       });
-      App.showToast('✅ POS Cihazı yapılandırması güncellendi!');
+      App.showToast('POS Cihazı yapılandırması güncellendi');
       App.closeModal('terminalConfigModal');
     } catch (e) {
       App.showToast('Ayarlar kaydedilemedi', true);
@@ -65,10 +65,10 @@ const Terminal = {
 
     document.getElementById('eftPosAmountText').innerText = `${total.toFixed(2)} ₺`;
     document.getElementById('eftPosStatusText').innerText = 'Kartınızı Okutunuz veya Şifrenizi Giriniz...';
-    document.getElementById('eftPosStatusText').style.color = 'var(--text-main)';
+    document.getElementById('eftPosStatusText').style.color = 'var(--text-primary)';
     document.getElementById('eftPosSubtext').innerText = 'Cihazdan provizyon yanıtı bekleniyor';
     document.getElementById('eftPosIcon').className = 'pulse-terminal';
-    document.getElementById('eftPosIcon').innerText = '💳';
+    document.getElementById('eftPosIcon').innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--accent)" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>';
     document.getElementById('eftPosDetails').style.display = 'none';
     document.getElementById('eftPosCancelBtn').style.display = 'block';
 
@@ -76,10 +76,10 @@ const Terminal = {
       const cfg = await Api.getTerminalConfig();
       document.getElementById('eftPosDeviceLabel').innerText = cfg.mode === 'BEKO_TCP'
         ? `Beko GMP3 Terminali (${cfg.host}:${cfg.port})`
-        : '🧪 Sanal POS Simülatörü (Test Modu)';
+        : 'Sanal POS Simülatörü (Test Modu)';
     } catch (e) {}
 
-    App.openModal('eftPosPayModal');
+    App.openModal('eftPosModal');
 
     try {
       const payData = await Api.payTerminal({
@@ -91,9 +91,9 @@ const Terminal = {
 
       if (payData.is_approved) {
         document.getElementById('eftPosIcon').className = '';
-        document.getElementById('eftPosIcon').innerText = '✅';
+        document.getElementById('eftPosIcon').innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--green)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="16 9 10 15 7 12"></polyline></svg>';
         document.getElementById('eftPosStatusText').innerText = 'ÖDEME ONAYLANDI!';
-        document.getElementById('eftPosStatusText').style.color = 'var(--apple-green)';
+        document.getElementById('eftPosStatusText').style.color = 'var(--green)';
         document.getElementById('eftPosSubtext').innerText = 'Banka provizyonu başarılı, fiş basılıyor...';
         document.getElementById('eftPosCancelBtn').style.display = 'none';
 
@@ -107,7 +107,7 @@ const Terminal = {
         `;
 
         setTimeout(async () => {
-          App.closeModal('eftPosPayModal');
+          App.closeModal('eftPosModal');
           await App.executeCheckout('CREDIT_CARD', total, null);
         }, 1200);
       } else {
@@ -115,9 +115,9 @@ const Terminal = {
       }
     } catch (err) {
       document.getElementById('eftPosIcon').className = '';
-      document.getElementById('eftPosIcon').innerText = '❌';
+      document.getElementById('eftPosIcon').innerHTML = '<svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
       document.getElementById('eftPosStatusText').innerText = 'İŞLEM BAŞARISIZ!';
-      document.getElementById('eftPosStatusText').style.color = 'var(--apple-red)';
+      document.getElementById('eftPosStatusText').style.color = 'var(--red)';
       document.getElementById('eftPosSubtext').innerText = err.message || 'Cihazdan provizyon alınamadı.';
     }
   }

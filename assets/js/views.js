@@ -43,7 +43,7 @@ const Views = {
         <td>${itemCount.toFixed(itemCount % 1 === 0 ? 0 : 2)} Kalem</td>
         <td><span class="pill-badge" style="display:inline-flex;">Tamamlandı</span></td>
         <td style="text-align:right;">
-          <button class="btn-top-action" onclick="Views.openRefundModal('${s.id}')">🔄 Kalem İade Et</button>
+          <button class="btn-top-action" onclick="Views.openRefundModal('${s.id}')">Kalem İade Et</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -148,7 +148,7 @@ const Views = {
         reason: reason
       });
 
-      App.showToast(`✅ İade tamamlandı! İade Tutarı: ${data.refunded_amount.toFixed(2)} ₺`);
+      App.showToast(`İade tamamlandı. İade Tutarı: ${data.refunded_amount.toFixed(2)} ₺`);
       App.closeModal('refundModal');
       this.loadTransactions();
       this.loadProducts();
@@ -207,7 +207,7 @@ const Views = {
     try {
       await Api.createProduct({ barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, quick_order: null });
       App.closeModal('newProductModal');
-      App.showToast('✅ Ürün kataloğa eklendi');
+      App.showToast('Ürün kataloğa eklendi');
       this.loadProducts();
       App.loadCatalog();
     } catch (e) {
@@ -253,7 +253,7 @@ const Views = {
   },
 
   async saveNewCustomer() {
-    const name = document.getElementById('ncName').value.trim();
+    const _cNameEl = document.getElementById('ncCampaignName') || document.getElementById('ncName'); const name = _cNameEl ? _cNameEl.value.trim() : '';
     const phone = document.getElementById('ncPhone').value.trim();
     const credit_limit = parseFloat(document.getElementById('ncLimit').value) || 2000.0;
     const note = document.getElementById('ncNote').value.trim();
@@ -266,7 +266,7 @@ const Views = {
     try {
       await Api.createCustomer({ name, phone, credit_limit, note: note || null });
       App.closeModal('newCustomerModal');
-      App.showToast('✅ Cari müşteri kaydedildi');
+      App.showToast('Cari müşteri kaydedildi');
       this.loadCustomers();
     } catch (e) {
       App.showToast('Müşteri kaydedilemedi', true);
@@ -289,7 +289,7 @@ const Views = {
     try {
       await Api.recordPayment({ customer_id: this.selectedCustomerIdForPayment, amount, note });
       App.closeModal('paymentModal');
-      App.showToast('✅ Tahsilat kaydedildi ve makbuz basıldı');
+      App.showToast('Tahsilat kaydedildi ve makbuz basıldı');
       this.loadCustomers();
     } catch (e) {
       App.showToast('Tahsilat kaydedilemedi', true);
@@ -338,7 +338,7 @@ const Views = {
           <div style="font-size:18px; font-weight:700;">${title}</div>
           <div style="font-size:12px; color:var(--text-muted);">Durum: ${status}</div>
         </div>
-        ${status === 'OPEN' ? `<button class="btn-checkout btn-cash" style="padding:8px 16px; font-size:13px;" onclick="Views.commitStockSession('${id}')">✓ Sayımı Onayla & Stokları Eşitle</button>` : ''}
+        ${status === 'OPEN' ? `<button class="btn-checkout btn-cash" style="padding:8px 16px; font-size:13px;" onclick="Views.commitStockSession('${id}')">Sayımı Onayla & Stokları Eşitle</button>` : ''}
       </div>
 
       ${status === 'OPEN' ? `
@@ -410,7 +410,7 @@ const Views = {
     if (!confirm('Sayımı onaylamak ve ürün stoklarını bu miktarlarla güncellemek istediğinize emin misiniz?')) return;
     try {
       await Api.commitStockSession(sessionId);
-      App.showToast('✅ Stoklar başarıyla güncellendi');
+      App.showToast('Stoklar başarıyla güncellendi');
       this.loadStockSessions();
     } catch (e) {}
   },
@@ -457,9 +457,9 @@ const Views = {
     try {
       const data = await Api.scanBarcode(code);
       if (data.found && data.product) {
-        document.getElementById('wasteProductInfo').innerText = `✓ Bulundu: ${data.product.name} (Stok: ${data.product.stock_qty} ${data.product.unit})`;
+        document.getElementById('wasteProductInfo').innerText = `Bulundu: ${data.product.name} (Stok: ${data.product.stock_qty} ${data.product.unit})`;
       } else {
-        document.getElementById('wasteProductInfo').innerText = '⚠️ Ürün bulunamadı';
+        document.getElementById('wasteProductInfo').innerText = 'Ürün bulunamadı';
       }
     } catch (e) {}
   },
@@ -476,7 +476,7 @@ const Views = {
 
     try {
       const record = await Api.recordWaste({ barcode, quantity: qty, reason });
-      App.showToast(`🗑️ Fire kaydedildi (${record.product_name}) ve stoktan düşüldü!`);
+      App.showToast(`Fire kaydedildi (${record.product_name}) ve stoktan düşüldü!`);
       App.closeModal('newWasteModal');
       this.loadWastes();
       this.loadProducts();
@@ -506,7 +506,7 @@ const Views = {
         card.innerHTML = `
           <div>
             <div class="shelf-card-header">
-              <span class="shelf-badge-origin">🇹🇷 YERLİ ÜRETİM</span>
+              <span class="shelf-badge-origin">YERLİ ÜRETİM</span>
               <span style="font-size:10px; font-weight:700; color:#64748b;">KDV %${l.vat_rate.toFixed(0)} DAHİL</span>
             </div>
             <div class="shelf-prod-name">${l.name}</div>
@@ -551,7 +551,7 @@ const Views = {
           <td style="color:var(--text-muted);">${new Date(m.created_at).toLocaleString('tr-TR')}</td>
           <td>
             <span class="pill-badge" style="color:${isEntry ? 'var(--apple-green)' : 'var(--apple-red)'};">
-              ${isEntry ? '🟢 Kasa Giriş / Avans' : '🔴 Kasa Çıkış / Masraf'}
+              ${isEntry ? '<span class="status-indicator active"></span> Kasa Giriş / Avans' : '<span class="status-indicator error"></span> Kasa Çıkış / Masraf'}
             </span>
           </td>
           <td><b>${isEntry ? '+' : '-'}${m.amount.toFixed(2)} ₺</b></td>
@@ -573,11 +573,11 @@ const Views = {
     const submitBtn = document.getElementById('btnSubmitCashMovement');
 
     if (type === 'IN') {
-      heading.innerText = '🟢 Kasa Avansı & Nakit Girişi';
+      heading.innerText = 'Kasa Avansı & Nakit Girişi';
       submitBtn.innerText = 'AVANSI KAYDET';
       submitBtn.className = 'btn-checkout btn-cash';
     } else {
-      heading.innerText = '🔴 Dükkan Masrafı & Nakit Çıkışı';
+      heading.innerText = 'Dükkan Masrafı & Nakit Çıkışı';
       submitBtn.innerText = 'MASRAFI KAYDET';
       submitBtn.className = 'btn-checkout btn-danger';
     }
@@ -597,7 +597,7 @@ const Views = {
 
     try {
       await Api.recordCashMovement({ movement_type: type, amount, reason });
-      App.showToast(`💵 Kasa hareketi başarıyla işlendi (${amount.toFixed(2)} ₺)`);
+      App.showToast(`Kasa hareketi başarıyla işlendi (${amount.toFixed(2)} ₺)`);
       App.closeModal('cashMovementModal');
       this.loadCashMovements();
     } catch (e) {
@@ -690,7 +690,7 @@ const Views = {
         <td><b style="color:var(--apple-green);">${r.grand_total.toFixed(2)} ₺</b></td>
         <td style="font-size:12px; color:var(--text-muted);">${r.notes || '-'}</td>
         <td style="text-align:right;">
-          <button class="btn-top-action" onclick="Views.viewGoodsReceiptDetail('${r.id}')">🔍 Fiş Detayı</button>
+          <button class="btn-top-action" onclick="Views.viewGoodsReceiptDetail('${r.id}')">Fiş Detayı</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -718,7 +718,7 @@ const Views = {
 
     try {
       await Api.createSupplier({ name, contact_person: contact || null, phone: phone || null, tax_info: tax_info || null });
-      App.showToast(`✅ Tedarikçi kaydedildi: ${name}`);
+      App.showToast(`Tedarikçi kaydedildi: ${name}`);
       App.closeModal('newSupplierModal');
       this.loadReceiving();
     } catch (e) {
@@ -786,13 +786,13 @@ const Views = {
             unit: cat.unit || 'adet',
             is_weighed: cat.is_weighed || false
           };
-          if (statusEl) statusEl.innerText = `✨ Ulusal Katalog: ${cat.name} (${cat.brand || 'Yerli Üretim'})`;
+          if (statusEl) statusEl.innerText = `Ulusal Katalog: ${cat.name} (${cat.brand || 'Yerli Üretim'})`;
         }
       } catch (e) {}
     }
 
     if (!prod) {
-      if (statusEl) statusEl.innerText = `⚠️ Ürün bulunamadı: ${code}. Önce Ürünler sayfasından tanımlayın.`;
+      if (statusEl) statusEl.innerText = `Ürün bulunamadı: ${code}. Önce Ürünler sayfasından tanımlayın.`;
       return;
     }
 
@@ -813,7 +813,7 @@ const Views = {
     document.getElementById('ngrBarcodeField').value = '';
     document.getElementById('ngrCostField').value = '';
     document.getElementById('ngrQtyField').value = '1';
-    if (statusEl) statusEl.innerText = `✅ Eklendi: ${prod.name}`;
+    if (statusEl) statusEl.innerText = `Eklendi: ${prod.name}`;
 
     this.renderNewGoodsReceiptItems();
   },
@@ -881,7 +881,7 @@ const Views = {
         }))
       });
 
-      App.showToast(`✅ Mal kabulü tamamlandı! Stoklar ve maliyetler güncellendi.`);
+      App.showToast('Mal kabulü tamamlandı. Stoklar ve maliyetler güncellendi.');
       App.closeModal('newGoodsReceiptModal');
       this.loadReceiving();
       this.loadProducts();
@@ -960,8 +960,8 @@ const Views = {
         : (c.campaign_type === 'AMOUNT' ? `${c.discount_value.toFixed(2)} ₺ Sabit İndirim` : `${c.buy_x || 3} Al ${c.pay_y || 2} Öde Promosyonu`);
 
       const statusBadge = c.is_active
-        ? '<span class="pill-badge" style="color:var(--apple-green);">🟢 Aktif</span>'
-        : '<span class="pill-badge offline">⚪ Pasif</span>';
+        ? '<span class="pill-badge" style="color:var(--apple-green);"><span class="status-indicator active"></span> Aktif</span>'
+        : '<span class="pill-badge offline"><span class="status-indicator inactive"></span> Pasif</span>';
 
       tr.innerHTML = `
         <td><b style="font-family:monospace; color:#38bdf8; font-size:14px;">${c.code}</b></td>
@@ -972,7 +972,7 @@ const Views = {
         <td>${statusBadge}</td>
         <td style="text-align:right;">
           <button class="btn-top-action" onclick="Views.toggleCampaign('${c.id}')">${c.is_active ? '⏸️ Durdur' : '▶️ Başlat'}</button>
-          <button class="btn-top-action" style="color:var(--apple-red);" onclick="Views.deleteCampaign('${c.id}')">🗑️ Sil</button>
+          <button class="btn-top-action" style="color:var(--apple-red);" onclick="Views.deleteCampaign('${c.id}')">Sil</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -981,7 +981,7 @@ const Views = {
 
   openNewCampaignModal() {
     document.getElementById('ncCode').value = '';
-    document.getElementById('ncName').value = '';
+    const _cNameEl = document.getElementById('ncCampaignName') || document.getElementById('ncName'); if (_cNameEl) _cNameEl.value = '';
     document.getElementById('ncType').value = 'PERCENT';
     document.getElementById('ncValue').value = '10.0';
     document.getElementById('ncMinSubtotal').value = '0.0';
@@ -990,7 +990,7 @@ const Views = {
 
   async saveNewCampaign() {
     const code = document.getElementById('ncCode').value.trim().toUpperCase();
-    const name = document.getElementById('ncName').value.trim();
+    const _cNameEl = document.getElementById('ncCampaignName') || document.getElementById('ncName'); const name = _cNameEl ? _cNameEl.value.trim() : '';
     const campaign_type = document.getElementById('ncType').value;
     const discount_value = parseFloat(document.getElementById('ncValue').value) || 0;
     const min_subtotal = parseFloat(document.getElementById('ncMinSubtotal').value) || 0;
@@ -1013,7 +1013,7 @@ const Views = {
         end_date: null
       });
 
-      App.showToast(`🎉 Kampanya oluşturuldu: ${code}`);
+      App.showToast(`Kampanya oluşturuldu: ${code}`);
       App.closeModal('newCampaignModal');
       this.loadCampaigns();
     } catch (e) {
@@ -1054,13 +1054,13 @@ const Views = {
 
     const res = await Cart.applyCampaign(code);
     if (res.success) {
-      App.showToast(`🎉 Kampanya uygulandı! (${res.discount.toFixed(2)} ₺ indirim)`);
+      App.showToast(`Kampanya uygulandı! (${res.discount.toFixed(2)} ₺ indirim)`);
       if (badge) {
         badge.style.display = 'inline-flex';
-        badge.innerText = `🎉 -${res.discount.toFixed(2)} ₺`;
+        badge.innerText = `-${res.discount.toFixed(2)} ₺`;
       }
     } else {
-      App.showToast(`⚠️ ${res.message}`, true);
+      App.showToast(`${res.message}`, true);
       if (badge) { badge.style.display = 'none'; badge.innerText = ''; }
     }
   },
@@ -1100,8 +1100,8 @@ const Views = {
       const tr = document.createElement('tr');
       const isTransit = t.status === 'IN_TRANSIT';
       const statusBadge = isTransit
-        ? '<span class="pill-badge" style="color:var(--apple-amber);">🚚 Yolda / Sevk Edildi</span>'
-        : '<span class="pill-badge" style="color:var(--apple-green);">✅ Teslim Alındı</span>';
+        ? '<span class="pill-badge" style="color:var(--apple-amber);"><span class="status-indicator pending"></span> Sevk Edildi</span>'
+        : '<span class="pill-badge" style="color:var(--apple-green);"><span class="status-indicator active"></span> Teslim Alındı</span>';
 
       tr.innerHTML = `
         <td><b style="font-family:monospace; color:var(--apple-blue);">${t.transfer_code}</b></td>
@@ -1111,7 +1111,7 @@ const Views = {
         <td>${t.items ? t.items.length : 0} Kalem</td>
         <td>${statusBadge}</td>
         <td style="text-align:right;">
-          ${isTransit ? `<button class="btn-top-action" style="color:var(--apple-green); font-weight:700;" onclick="Views.receiveTransfer('${t.id}')">📥 Teslim Alındı Onayla</button>` : '<span style="color:var(--text-muted); font-size:12px;">Tamamlandı</span>'}
+          ${isTransit ? `<button class="btn-top-action" style="color:var(--apple-green); font-weight:700;" onclick="Views.receiveTransfer('${t.id}')"> Teslim Alındı Onayla</button>` : '<span style="color:var(--text-muted); font-size:12px;">Tamamlandı</span>'}
         </td>
       `;
       tbody.appendChild(tr);
@@ -1148,7 +1148,7 @@ const Views = {
     if (!code) return;
     const prod = this.products.find(p => p.barcode === code || p.id === code || p.name.toLowerCase().includes(code.toLowerCase()));
     if (!prod) {
-      if (statusEl) statusEl.innerText = `⚠️ Ürün bulunamadı: ${code}`;
+      if (statusEl) statusEl.innerText = `Ürün bulunamadı: ${code}`;
       return;
     }
 
@@ -1161,7 +1161,7 @@ const Views = {
 
     document.getElementById('ntBarcodeField').value = '';
     document.getElementById('ntQtyField').value = '1';
-    if (statusEl) statusEl.innerText = `✅ Eklendi: ${prod.name} (${qty} ${prod.unit})`;
+    if (statusEl) statusEl.innerText = `Eklendi: ${prod.name} (${qty} ${prod.unit})`;
     this.renderNewTransferItems();
   },
 
@@ -1208,7 +1208,7 @@ const Views = {
         items: this.newTransferItems
       });
 
-      App.showToast('🏢 Şubeler arası sevkıyat başlatıldı, stoktan düşüldü.');
+      App.showToast('Şubeler arası sevkıyat başlatıldı, stoktan düşüldü.');
       App.closeModal('newTransferModal');
       this.loadTransfers();
       this.loadProducts();
@@ -1221,7 +1221,7 @@ const Views = {
     if (!confirm('Bu transferdeki ürünleri şube stoğunuza kabul etmek istiyor musunuz?')) return;
     try {
       await Api.receiveTransfer(id);
-      App.showToast('📦 Mallar teslim alındı ve stoğa eklendi!');
+      App.showToast('Mallar teslim alındı ve stoğa eklendi.');
       this.loadTransfers();
       this.loadProducts();
     } catch (e) {
@@ -1250,13 +1250,13 @@ const Views = {
     if (!data || !data.active_shift) {
       container.innerHTML = `
         <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:28px; text-align:center;">
-          <div style="font-size:40px; margin-bottom:12px;">🔴</div>
+          <div style="margin-bottom:12px;"><span class="status-indicator error" style="width:18px; height:18px;"></span></div>
           <div style="font-size:20px; font-weight:800; margin-bottom:8px;">Kasa Vardiyası Kapalı</div>
           <div style="font-size:13px; color:var(--text-muted); max-width:440px; margin:0 auto 20px auto;">
             Satış işlemlerine başlamadan önce açılış devir nakdini girerek vardiyanızı başlatabilirsiniz.
           </div>
           <button class="btn-checkout btn-cash" style="max-width:280px; margin:0 auto;" onclick="Views.openShiftModal()">
-            🟢 VARDİYAYI BAŞLAT (DEVİR GİR)
+            VARDİYAYI BAŞLAT (DEVİR GİR)
           </button>
         </div>
       `;
@@ -1270,7 +1270,7 @@ const Views = {
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
         <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:20px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-            <div style="font-size:16px; font-weight:800; color:var(--text-main);">🟢 Aktif Vardiya Durumu</div>
+            <div style="font-size:16px; font-weight:800; color:var(--text-main);"><span class="status-indicator active"></span> Aktif Vardiya Durumu</div>
             <span class="pill-badge" style="color:var(--apple-green);">Açık</span>
           </div>
           <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
@@ -1303,10 +1303,10 @@ const Views = {
           </div>
           <div style="display:flex; gap:10px; margin-top:20px;">
             <button class="btn-checkout btn-card" style="flex:1; font-size:13px;" onclick="Views.showXReport()">
-              📄 X-Raporu Yazdır
+              X-Raporu Yazdır
             </button>
             <button class="btn-checkout btn-danger" style="flex:1; font-size:13px;" onclick="Views.openCloseShiftModal()">
-              🔴 Vardiyayı Kapat (Sayım)
+              Vardiyayı Kapat (Sayım)
             </button>
           </div>
         </div>
@@ -1327,7 +1327,7 @@ const Views = {
 
     try {
       await Api.openShift({ opening_float: floatVal, cashier_name: cashier, notes: notes || null });
-      App.showToast(`🟢 Vardiya açıldı. Devir nakit: ${floatVal.toFixed(2)} ₺`);
+      App.showToast(`Vardiya açıldı. Devir nakit: ${floatVal.toFixed(2)} ₺`);
       App.closeModal('openShiftModal');
       this.loadShiftStatus();
     } catch (e) {
@@ -1370,7 +1370,7 @@ const Views = {
 
     try {
       await Api.closeShift({ actual_cash: actual, notes: notes || null });
-      App.showToast('🔴 Vardiya kapatıldı. Gün sonu raporu oluşturuldu.');
+      App.showToast('Vardiya kapatıldı. Gün sonu raporu oluşturuldu.');
       App.closeModal('closeShiftModal');
       this.loadShiftStatus();
       this.fetchAndDisplayZReport();
@@ -1502,7 +1502,7 @@ const Views = {
         notes: 'Parçalı / Karma Ödeme'
       });
 
-      App.showToast(`✅ Parçalı Satış Onaylandı! Fiş No: ${sale.receipt_no}`);
+      App.showToast(`Parçalı Satış Onaylandı. Fiş No: ${sale.receipt_no}`);
       App.closeModal('splitPayModal');
       Cart.clear();
       this.loadTransactions();
@@ -1531,9 +1531,9 @@ const Views = {
         }
         if (badge) {
           badge.style.display = 'block';
-          badge.innerText = `✨ 4.13M Ulusal Katalog: ${res.brand || 'Yerli Üretim'} (${res.name})`;
+          badge.innerText = `Ulusal Katalog (4.13M): ${res.brand || 'Yerli Üretim'} (${res.name})`;
         }
-        App.showToast(`🌟 Ulusal Katalogda Bulundu: ${res.name}`);
+        App.showToast(`Ulusal Katalogda Bulundu: ${res.name}`);
       } else {
         if (badge) badge.style.display = 'none';
         App.showToast('Ulusal katalogda bulunamadı, elle girebilirsiniz.');
