@@ -3,6 +3,7 @@ const App = {
   ws: null,
 
   init() {
+    this.initTheme();
     Cart.init();
     this.initWebSocket();
     this.fetchStatus();
@@ -54,8 +55,10 @@ const App = {
       const d = await Api.getStatus();
       const elStore = document.getElementById('hdrStoreName');
       const elBranch = document.getElementById('hdrBranch');
+      const elReg = document.getElementById('hdrRegisterId');
       if (elStore) elStore.innerText = d.business_name;
-      if (elBranch) elBranch.innerText = `${d.branch_name} • Kasa: ${d.register_id}`;
+      if (elBranch) elBranch.innerText = d.branch_name;
+      if (elReg) elReg.innerText = d.register_id;
 
       const badge = document.getElementById('netStatusBadge');
       const txt = document.getElementById('netStatusText');
@@ -116,12 +119,12 @@ const App = {
 
   switchMainScreen(screenId) {
     document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-seg-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.nav-item, .nav-seg-btn').forEach(b => b.classList.remove('active'));
 
     const target = document.getElementById(`screen-${screenId}`);
     if (target) target.classList.add('active');
 
-    const btns = Array.from(document.querySelectorAll('.nav-seg-btn'));
+    const btns = Array.from(document.querySelectorAll('.nav-item, .nav-seg-btn'));
     const activeBtn = btns.find(b => b.getAttribute('onclick')?.includes(`'${screenId}'`));
     if (activeBtn) activeBtn.classList.add('active');
 
@@ -339,10 +342,30 @@ const App = {
     t.style.borderLeftColor = isError ? 'var(--apple-red)' : 'var(--apple-green)';
     t.style.display = 'block';
     setTimeout(() => { t.style.display = 'none'; }, 3000);
+  },
+
+  initTheme() {
+    const saved = localStorage.getItem('qordy_pos_theme') || 'light';
+    const switchEl = document.getElementById('themeSwitch');
+    if (saved === 'dark') {
+      document.body.classList.add('dark-theme');
+      if (switchEl) switchEl.checked = true;
+    } else {
+      document.body.classList.remove('dark-theme');
+      if (switchEl) switchEl.checked = false;
+    }
+  },
+
+  toggleDarkTheme() {
+    const isDark = document.body.classList.toggle('dark-theme');
+    localStorage.setItem('qordy_pos_theme', isDark ? 'dark' : 'light');
+    const switchEl = document.getElementById('themeSwitch');
+    if (switchEl) switchEl.checked = isDark;
   }
 };
 
 // Global delegation for onclick handlers in HTML
+window.toggleDarkTheme = () => App.toggleDarkTheme();
 window.switchMainScreen = (id) => App.switchMainScreen(id);
 window.triggerSyncNow = () => App.triggerSyncNow();
 window.openTerminalConfigModal = () => Terminal.openConfigModal();

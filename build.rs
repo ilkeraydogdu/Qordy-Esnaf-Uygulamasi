@@ -9,4 +9,7 @@ fn main() {
     println!("cargo:rerun-if-changed=assets/js/views.js");
     println!("cargo:rerun-if-changed=assets/js/app.js");
     println!("cargo:rerun-if-changed=assets/js/customer.js");
+    println!("cargo:rerun-if-changed=assets/images/caddecafe_logo.webp");
+    println!("cargo:rerun-if-changed=assets/images/logo.webp");
+    println!("cargo:rerun-if-changed=assets/images/pofuduk-logo.svg");
 }

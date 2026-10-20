@@ -30,6 +30,19 @@ pub fn get_static_asset(path: &str) -> Option<(&'static str, &'static str)> {
         "/assets/js/views.js" => Some((include_str!("../assets/js/views.js"), "application/javascript; charset=utf-8")),
         "/assets/js/app.js" => Some((include_str!("../assets/js/app.js"), "application/javascript; charset=utf-8")),
         "/assets/js/customer.js" => Some((include_str!("../assets/js/customer.js"), "application/javascript; charset=utf-8")),
+        "/assets/images/pofuduk-logo.svg" => Some((include_str!("../assets/images/pofuduk-logo.svg"), "image/svg+xml; charset=utf-8")),
+        _ => None,
+    }
+}
+
+pub fn get_static_binary_asset(path: &str) -> Option<(&'static [u8], &'static str)> {
+    let clean_path = path.split('?').next().unwrap_or(path);
+    match clean_path {
+        "/assets/images/caddecafe_logo.webp" => Some((include_bytes!("../assets/images/caddecafe_logo.webp"), "image/webp")),
+        "/assets/images/logo.webp" => Some((include_bytes!("../assets/images/logo.webp"), "image/webp")),
+        "/assets/images/logo_light.webp" => Some((include_bytes!("../assets/images/logo_light.webp"), "image/webp")),
+        "/assets/images/qordy_app_icon.png" => Some((include_bytes!("../assets/images/qordy_app_icon.png"), "image/png")),
+        "/assets/images/favicon.png" => Some((include_bytes!("../assets/images/favicon.png"), "image/png")),
         _ => None,
     }
 }

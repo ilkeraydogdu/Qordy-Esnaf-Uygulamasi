@@ -40,6 +40,13 @@ pub async fn handle_static_asset(Path(path): Path<String>) -> Response {
             content,
         )
             .into_response()
+    } else if let Some((bytes, mime)) = ui::get_static_binary_asset(&full_path) {
+        (
+            StatusCode::OK,
+            [("content-type", mime), ("cache-control", "no-cache, no-store, must-revalidate")],
+            bytes,
+        )
+            .into_response()
     } else {
         (StatusCode::NOT_FOUND, "Static asset not found").into_response()
     }
