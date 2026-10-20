@@ -151,11 +151,20 @@ fn main() -> Result<()> {
 
     info!("Sistem hazır. Webview penceresi açıldı.");
 
+    #[cfg(target_os = "macos")]
+    let mut dock_icon_initialized = false;
+
     // Event Loop (Ana UI iş parçacığında çalışır)
     event_loop.run(move |event, _, control_flow| {
         #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
         let _ = &webview;
         *control_flow = ControlFlow::Wait;
+
+        #[cfg(target_os = "macos")]
+        if !dock_icon_initialized {
+            set_macos_dock_icon();
+            dock_icon_initialized = true;
+        }
 
         if let Event::WindowEvent { event, .. } = event {
             if let WindowEvent::CloseRequested = event {
@@ -170,39 +179,39 @@ fn main() -> Result<()> {
 #[allow(deprecated, unexpected_cfgs)]
 fn set_macos_dock_icon() {
     use cocoa::base::{id, nil};
-    use cocoa::foundation::NSString;
     use objc::{msg_send, sel, sel_impl};
 
     unsafe {
         let app: id = msg_send![objc::class!(NSApplication), sharedApplication];
-        let mut candidates = Vec::new();
+        // Ensure regular activation policy so Dock icon is active
+        let _: () = msg_send![app, setActivationPolicy: 0isize]; // NSApplicationActivationPolicyRegular = 0
 
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(exe_dir) = exe_path.parent() {
-                if let Some(contents) = exe_dir.parent() {
-                    candidates.push(contents.join("Resources").join("AppIcon.icns"));
-                    candidates.push(contents.join("Resources").join("assets").join("AppIcon.icns"));
-                    candidates.push(contents.join("Resources").join("assets").join("favicon.png"));
-                }
-            }
+        let mut set = false;
+
+        // 1. Try embedded ICNS bytes directly
+        let icns_bytes = include_bytes!("../assets/AppIcon.icns");
+        let data: id = msg_send![objc::class!(NSData), dataWithBytes: icns_bytes.as_ptr() length: icns_bytes.len()];
+        let img: id = msg_send![objc::class!(NSImage), alloc];
+        let img: id = msg_send![img, initWithData: data];
+        if img != nil {
+            let _: () = msg_send![app, setApplicationIconImage: img];
+            let dock_tile: id = msg_send![app, dockTile];
+            let _: () = msg_send![dock_tile, display];
+            info!("macOS Dock uygulama ikonu (embedded AppIcon.icns) başarıyla ayarlandı.");
+            set = true;
         }
-        candidates.push(std::path::PathBuf::from("assets/images/AppIcon.icns"));
-        candidates.push(std::path::PathBuf::from("assets/images/favicon.png"));
-        candidates.push(std::path::PathBuf::from("assets/images/qordy_app_icon.png"));
 
-        for path in candidates {
-            if path.exists() {
-                if let Ok(abs_path) = std::fs::canonicalize(&path) {
-                    let path_str = abs_path.to_string_lossy();
-                    let ns_str = NSString::alloc(nil).init_str(&path_str);
-                    let img: id = msg_send![objc::class!(NSImage), alloc];
-                    let img: id = msg_send![img, initWithContentsOfFile: ns_str];
-                    if img != nil {
-                        let _: () = msg_send![app, setApplicationIconImage: img];
-                        info!("macOS Dock uygulama ikonu başarıyla ayarlandı: {:?}", path);
-                        break;
-                    }
-                }
+        // 2. Fallback to embedded PNG bytes
+        if !set {
+            let png_bytes = include_bytes!("../assets/favicon.png");
+            let data: id = msg_send![objc::class!(NSData), dataWithBytes: png_bytes.as_ptr() length: png_bytes.len()];
+            let img: id = msg_send![objc::class!(NSImage), alloc];
+            let img: id = msg_send![img, initWithData: data];
+            if img != nil {
+                let _: () = msg_send![app, setApplicationIconImage: img];
+                let dock_tile: id = msg_send![app, dockTile];
+                let _: () = msg_send![dock_tile, display];
+                info!("macOS Dock uygulama ikonu (embedded PNG) başarıyla ayarlandı.");
             }
         }
     }
