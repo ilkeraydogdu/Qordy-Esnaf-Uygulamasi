@@ -1,28 +1,52 @@
 /**
- * QORDY POS - Enterprise Authentication & Session Management
- * Apple HIG Lock Screen & Cashier PIN / Password Authentication
- * Features:
- *  - Persistent sessions via SQLite & LocalStorage (Mac & Windows)
- *  - Cryptographic salted verification & rate-limiting protection
- *  - Interactive PIN keypad with instant tactile feedback
- *  - Keyboard shortcuts (0-9, Backspace, Enter, F12 to lock)
- *  - Cashier quick avatar picker
- *  - Manager password login fallback
+ * QORDY POS - Enterprise Authentication & Role-Based Access Control (RBAC)
+ * Esnaf Perakende Mağaza Aktivasyonu & Hızlı Kasiyer PIN Sistemi
+ * 
+ * Özellikler:
+ * 1. Esnaf Mağaza Aktivasyonu: İlk kurulumda bir kez E-Posta & Şifre ile yetkilendirme.
+ * 2. Kalıcı Cihaz Hafızası: Bir kez aktive edildikten sonra tekrar tekrar e-posta/şifre istemez.
+ * 3. Hızlı Kasa PIN Girişi: Kasiyer ve Esnaf için 4 haneli dokunmatik/klavye PIN ile 1 saniyede açılış.
+ * 4. Rol Bazlı Yetki Sınırlandırması (RBAC):
+ *    - Kasiyer (CASHIER): Sadece Kasa Satış (POS) ve İşlemler/Fiş İade erişimi. Diğer sayfalar kilitli.
+ *    - Esnaf / Yönetici (MANAGER): Z-Raporu, Stok, Mal Kabul, Fiyatlar, Personel yönetimi tam açık.
+ * 5. Kasa Başında Hızlı Kasiyer / Vardiya Değişimi
+ * 6. PIN Belirleme & Yeni Kasiyer Ekleme Yönetimi
  */
 
 const Auth = {
     tokenKey: 'qordy_pos_token',
+    activatedKey: 'qordy_esnaf_activated',
+    storeNameKey: 'qordy_store_name',
+
     currentSession: null,
     currentUser: null,
     usersList: [],
     enteredPin: '',
-    lockoutTimer: null,
+    pendingRestrictedScreen: null,
 
-    // Initialize Auth module
+    // 1. Modül Başlatma
     async init() {
         this.bindEvents();
         await this.loadUsers();
         await this.checkCurrentSession();
+    },
+
+    isActivated() {
+        return localStorage.getItem(this.activatedKey) === 'true';
+    },
+
+    setActivated(val, storeName) {
+        if (val) {
+            localStorage.setItem(this.activatedKey, 'true');
+            if (storeName) localStorage.setItem(this.storeNameKey, storeName);
+        } else {
+            localStorage.removeItem(this.activatedKey);
+            localStorage.removeItem(this.storeNameKey);
+        }
+    },
+
+    getStoreName() {
+        return localStorage.getItem(this.storeNameKey) || 'QORDY Kadıköy Çarşı Esnafı';
     },
 
     getToken() {
@@ -42,16 +66,17 @@ const Auth = {
         return token ? { 'Authorization': 'Bearer ' + token, 'X-Session-Token': token } : {};
     },
 
-    // Load available active cashiers/managers for avatar picker
+    // 2. Kullanıcıları Yükle
     async loadUsers() {
         try {
             const res = await fetch('/api/auth/users');
             if (res.ok) {
                 this.usersList = await res.json();
                 this.renderUserAvatars();
+                this.populateChangePinSelect();
             }
         } catch (e) {
-            console.warn('Kullanıcı listesi yüklenemedi:', e);
+            console.warn('Kullanıcı listesi çekilemedi:', e);
         }
     },
 
@@ -60,7 +85,7 @@ const Auth = {
         if (!container) return;
 
         if (!this.usersList || this.usersList.length === 0) {
-            container.innerHTML = '<div style="color:var(--text-tertiary);font-size:13px;">Kayıtlı kasiyer bulunamadı</div>';
+            container.innerHTML = '<div style="color:var(--text-tertiary);font-size:13px;">Kayıtlı personel bulunamadı</div>';
             return;
         }
 
@@ -74,18 +99,17 @@ const Auth = {
                         <span>${initials}</span>
                     </div>
                     <div class="auth-avatar-name">${u.name}</div>
-                    <div class="auth-avatar-role">${isManager ? 'Yönetici' : 'Kasiyer'}</div>
+                    <div class="auth-avatar-role">${isManager ? 'Esnaf (Yönetici)' : 'Kasiyer'}</div>
                 </div>
             `;
         }).join('');
 
-        // Click on avatar
+        // Tıklama ile avatar seçimi
         container.querySelectorAll('.auth-avatar-card').forEach(card => {
             card.addEventListener('click', () => {
                 container.querySelectorAll('.auth-avatar-card').forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
                 const name = card.dataset.userName;
-                const role = card.dataset.role;
                 const targetNameEl = document.getElementById('authTargetUser');
                 if (targetNameEl) targetNameEl.textContent = name;
                 this.clearPin();
@@ -98,8 +122,22 @@ const Auth = {
         }
     },
 
-    // Check existing session
+    populateChangePinSelect() {
+        const select = document.getElementById('changePinUserSelect');
+        if (!select) return;
+        select.innerHTML = this.usersList.map(u => `
+            <option value="${u.id}">${u.name} (${u.role === 'MANAGER' ? 'Esnaf/Yönetici' : 'Kasiyer'})</option>
+        `).join('');
+    },
+
+    // 3. Mevcut Oturum Kontrolü
     async checkCurrentSession() {
+        // Cihaz hiç aktive edilmemişse ilk aktivasyon ekranını göster
+        if (!this.isActivated()) {
+            this.showLockScreen('activation');
+            return;
+        }
+
         const token = this.getToken();
         if (!token) {
             this.showLockScreen('login');
@@ -120,6 +158,7 @@ const Auth = {
                     } else {
                         this.hideLockScreen();
                         this.updateActiveUserDisplay(data.session.user_name, data.session.role);
+                        this.applyRolePermissions(data.session.role);
                     }
                     return;
                 }
@@ -128,7 +167,6 @@ const Auth = {
             console.error('Oturum doğrulama hatası:', e);
         }
 
-        // Invalid or expired token
         this.setToken(null);
         this.showLockScreen('login');
     },
@@ -139,7 +177,9 @@ const Auth = {
 
         const roleBadge = document.getElementById('hdrRoleBadge');
         if (roleBadge) {
-            roleBadge.textContent = role === 'MANAGER' ? 'Yönetici' : 'Kasiyer';
+            roleBadge.textContent = role === 'MANAGER' ? 'Esnaf / Yönetici' : 'Kasiyer';
+            roleBadge.style.background = role === 'MANAGER' ? 'rgba(255, 149, 0, 0.15)' : 'rgba(0, 122, 255, 0.12)';
+            roleBadge.style.color = role === 'MANAGER' ? 'var(--accent-orange)' : 'var(--apple-blue)';
             roleBadge.style.display = 'inline-block';
         }
 
@@ -147,8 +187,144 @@ const Auth = {
         if (avatarInitial && name) {
             avatarInitial.textContent = name.substring(0, 1).toUpperCase();
         }
+
+        const storeBadge = document.getElementById('authStoreBadge');
+        if (storeBadge) {
+            storeBadge.textContent = `${this.getStoreName()} • KASA-01`;
+        }
     },
 
+    // 4. Rol Bazlı Yetkilendirme (RBAC - Kasiyer Sınırlandırması)
+    applyRolePermissions(role) {
+        const isManager = role === 'MANAGER' || role === 'ADMIN';
+
+        // Kasiyer için sınırlandırılan ekranlar:
+        // Yalnızca 'pos' ve 'transactions' sayfalarına serbestçe girebilir!
+        const restrictedScreens = [
+            'registers', 'products', 'receiving', 'stock',
+            'transfers', 'wastes', 'labels', 'customers',
+            'campaigns', 'reports', 'cash'
+        ];
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            const clickAttr = item.getAttribute('onclick') || '';
+            const match = clickAttr.match(/switchMainScreen\('([^']+)'\)/);
+            if (match && match[1]) {
+                const screenId = match[1];
+                if (restrictedScreens.includes(screenId)) {
+                    if (isManager) {
+                        item.classList.remove('cashier-restricted');
+                        item.removeAttribute('title');
+                    } else {
+                        item.classList.add('cashier-restricted');
+                        item.setAttribute('title', 'Bu işlem için Yönetici / Esnaf yetkisi gereklidir 🔒');
+                    }
+                }
+            }
+        });
+
+        // Eğer şu an açık olan ekran kilitliyse ve giriş yapan kasiyerse hemen Kasa Satışına yönlendir!
+        if (!isManager) {
+            const activeScreen = document.querySelector('.screen-view.active');
+            if (activeScreen && activeScreen.id) {
+                const currentId = activeScreen.id.replace('screen-', '');
+                if (restrictedScreens.includes(currentId)) {
+                    if (window.App && window.App.switchMainScreen) {
+                        window.App.switchMainScreen('pos');
+                    }
+                }
+            }
+        }
+    },
+
+    canAccessScreen(screenId) {
+        if (!this.currentSession) return false;
+        const role = this.currentSession.role;
+        if (role === 'MANAGER' || role === 'ADMIN') return true;
+
+        // Kasiyer yalnızca Kasa Satışı ve İşlemler sayfasına doğrudan girebilir
+        if (screenId === 'pos' || screenId === 'transactions') return true;
+
+        return false;
+    },
+
+    requestManagerAccess(screenId) {
+        this.pendingRestrictedScreen = screenId;
+        const screenNames = {
+            'registers': 'Kasa & Vardiya / X-Raporu',
+            'products': 'Ürün & Fiyat Kataloğu',
+            'receiving': 'Mal Kabul & İrsaliye',
+            'stock': 'Stok Sayımı',
+            'transfers': 'Şubeler Arası Transfer',
+            'wastes': 'Fire & Zayi Takibi',
+            'labels': 'Raf Etiketi Basımı',
+            'customers': 'Veresiye Defteri (Cari)',
+            'campaigns': 'Kampanyalar & Kuponlar',
+            'reports': 'Gün Sonu Z-Raporu & Mali Özet',
+            'cash': 'Kasa Avans / Masraf'
+        };
+
+        const targetName = screenNames[screenId] || screenId;
+        const labelEl = document.getElementById('managerPromptScreenName');
+        if (labelEl) labelEl.textContent = targetName;
+
+        const pinInput = document.getElementById('managerAuthPinInput');
+        if (pinInput) {
+            pinInput.value = '';
+            setTimeout(() => pinInput.focus(), 150);
+        }
+
+        const errEl = document.getElementById('managerAuthError');
+        if (errEl) errEl.style.display = 'none';
+
+        if (window.openModal) window.openModal('managerPinAuthModal');
+    },
+
+    async confirmManagerAuth() {
+        const pinInput = document.getElementById('managerAuthPinInput');
+        const pin = pinInput ? pinInput.value.trim() : '';
+        const errEl = document.getElementById('managerAuthError');
+
+        if (!pin || pin.length < 4) {
+            if (errEl) {
+                errEl.textContent = 'Lütfen en az 4 haneli Yönetici PIN kodunu girin.';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin, remember_me: false })
+            });
+
+            const data = await res.json();
+            if (data.success && data.user && (data.user.role === 'MANAGER' || data.user.role === 'ADMIN')) {
+                if (window.closeModal) window.closeModal('managerPinAuthModal');
+                if (window.showToast) window.showToast(`Yönetici onayı sağlandı: ${data.user.name}`, 'success');
+                const target = this.pendingRestrictedScreen;
+                this.pendingRestrictedScreen = null;
+                if (target && window.App && window.App.switchMainScreen) {
+                    // Geçici erişim ver ve ekranı aç
+                    window.App.switchMainScreen(target);
+                }
+            } else {
+                if (errEl) {
+                    errEl.textContent = 'Hatalı PIN veya bu kullanıcı Yönetici yetkisine sahip değil!';
+                    errEl.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = 'Bağlantı hatası.';
+                errEl.style.display = 'block';
+            }
+        }
+    },
+
+    // 5. Ekran Gösterim Modları
     showLockScreen(mode = 'login') {
         const overlay = document.getElementById('authLockScreen');
         if (!overlay) return;
@@ -156,23 +332,29 @@ const Auth = {
         overlay.classList.add('active');
         this.clearPin();
 
-        const unlockView = document.getElementById('authUnlockView');
+        const actView = document.getElementById('authActivationView');
         const loginView = document.getElementById('authLoginView');
-        const passView = document.getElementById('authPasswordView');
+        const unlockView = document.getElementById('authUnlockView');
 
-        if (mode === 'unlock' && this.currentSession) {
-            if (unlockView) unlockView.style.display = 'block';
+        if (mode === 'activation') {
+            if (actView) actView.style.display = 'block';
             if (loginView) loginView.style.display = 'none';
-            if (passView) passView.style.display = 'none';
+            if (unlockView) unlockView.style.display = 'none';
+        } else if (mode === 'unlock' && this.currentSession) {
+            if (actView) actView.style.display = 'none';
+            if (loginView) loginView.style.display = 'none';
+            if (unlockView) unlockView.style.display = 'block';
 
             const unlockName = document.getElementById('authUnlockUserName');
             if (unlockName) unlockName.textContent = this.currentSession.user_name;
             const unlockRole = document.getElementById('authUnlockUserRole');
-            if (unlockRole) unlockRole.textContent = this.currentSession.role === 'MANAGER' ? 'Yönetici Oturumu' : 'Kasiyer Oturumu';
+            if (unlockRole) unlockRole.textContent = this.currentSession.role === 'MANAGER' ? 'Esnaf / Yönetici Kilitlendi' : 'Kasiyer Kilitlendi';
         } else {
-            if (unlockView) unlockView.style.display = 'none';
+            if (actView) actView.style.display = 'none';
             if (loginView) loginView.style.display = 'block';
-            if (passView) passView.style.display = 'none';
+            if (unlockView) unlockView.style.display = 'none';
+            const storeBadge = document.getElementById('authStoreBadge');
+            if (storeBadge) storeBadge.textContent = `${this.getStoreName()} • KASA-01`;
         }
     },
 
@@ -182,12 +364,13 @@ const Auth = {
         this.clearPin();
     },
 
+    // 6. PIN Numpad Mantığı
     appendPinDigit(digit) {
         if (this.enteredPin.length >= 6) return;
         this.enteredPin += digit;
         this.updatePinDots();
 
-        // 4 veya daha fazla hane girildiğinde otomatik doğrulama yapabilir
+        // 4 hane dolduğunda otomatik doğrula
         if (this.enteredPin.length === 4) {
             setTimeout(() => this.submitPin(), 120);
         }
@@ -236,6 +419,7 @@ const Auth = {
         this.clearPin();
     },
 
+    // 7. PIN ile Giriş / Kilit Açma
     async submitPin() {
         if (this.enteredPin.length < 4) {
             this.showError('PIN en az 4 haneli olmalıdır.');
@@ -244,7 +428,7 @@ const Auth = {
 
         const pin = this.enteredPin;
 
-        // Is it unlock mode?
+        // Kilit açma modu
         const unlockView = document.getElementById('authUnlockView');
         if (unlockView && unlockView.style.display !== 'none' && this.getToken()) {
             try {
@@ -259,8 +443,9 @@ const Auth = {
                     if (this.currentSession) {
                         this.currentSession.is_locked = false;
                         this.updateActiveUserDisplay(this.currentSession.user_name, this.currentSession.role);
+                        this.applyRolePermissions(this.currentSession.role);
                     }
-                    if (window.showToast) window.showToast('Kilit açıldı', 'success');
+                    if (window.showToast) window.showToast('Kasa kilidi açıldı', 'success');
                 } else {
                     this.showError(data.message || 'Hatalı PIN kodu.');
                 }
@@ -270,13 +455,12 @@ const Auth = {
             return;
         }
 
-        // Login Mode
+        // Günlük Kasa PIN Girişi
         try {
-            const rememberMe = document.getElementById('authRememberMe')?.checked ?? true;
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin, remember_me: rememberMe })
+                body: JSON.stringify({ pin, remember_me: true })
             });
 
             const data = await res.json();
@@ -290,37 +474,47 @@ const Auth = {
                     is_locked: false
                 };
                 this.updateActiveUserDisplay(data.user.name, data.user.role);
+                this.applyRolePermissions(data.user.role);
                 this.hideLockScreen();
-                if (window.showToast) window.showToast(`Hoş geldiniz, ${data.user.name}`, 'success');
+                const roleTitle = data.user.role === 'MANAGER' ? 'Esnaf / Yönetici' : 'Kasiyer';
+                if (window.showToast) window.showToast(`Hoş geldiniz, ${data.user.name} (${roleTitle})`, 'success');
             } else {
-                this.showError(data.error || 'Giriş başarısız. Lütfen tekrar deneyin.');
+                this.showError(data.error || 'Hatalı PIN kodu. Lütfen tekrar deneyin.');
             }
         } catch (e) {
             this.showError('Sunucu bağlantı hatası.');
         }
     },
 
-    async submitPassword() {
-        const usernameInput = document.getElementById('authUsernameInput');
-        const passwordInput = document.getElementById('authPasswordInput');
-        const username = usernameInput ? usernameInput.value.trim() : '';
-        const password = passwordInput ? passwordInput.value : '';
+    // 8. İlk Esnaf Mağaza Aktivasyonu (E-Posta & Şifre)
+    async submitActivation() {
+        const emailInput = document.getElementById('activationEmail');
+        const passInput = document.getElementById('activationPassword');
+        const storeInput = document.getElementById('activationStoreName');
+        const errEl = document.getElementById('activationError');
+
+        const username = emailInput ? emailInput.value.trim() : '';
+        const password = passInput ? passInput.value : '';
+        const storeName = storeInput ? storeInput.value.trim() : 'QORDY Kadıköy Çarşı Esnafı';
 
         if (!username || !password) {
-            this.showError('Kullanıcı adı ve şifre zorunludur.');
+            if (errEl) {
+                errEl.textContent = 'Lütfen e-posta ve şifrenizi giriniz.';
+                errEl.style.display = 'block';
+            }
             return;
         }
 
         try {
-            const rememberMe = document.getElementById('authRememberMe')?.checked ?? true;
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password, remember_me: rememberMe })
+                body: JSON.stringify({ username, password, remember_me: true })
             });
 
             const data = await res.json();
             if (data.success && data.token && data.user) {
+                this.setActivated(true, storeName);
                 this.setToken(data.token);
                 this.currentSession = {
                     token: data.token,
@@ -329,17 +523,135 @@ const Auth = {
                     role: data.user.role,
                     is_locked: false
                 };
+
+                // Başlığı da mağaza adına göre güncelle
+                const headerTitle = document.querySelector('.brand-name');
+                if (headerTitle) headerTitle.textContent = storeName;
+
                 this.updateActiveUserDisplay(data.user.name, data.user.role);
+                this.applyRolePermissions(data.user.role);
                 this.hideLockScreen();
-                if (window.showToast) window.showToast(`Yönetici girişi başarılı: ${data.user.name}`, 'success');
+                if (window.showToast) window.showToast(`Mağaza Aktivasyonu Başarılı! Hoş geldiniz.`, 'success');
             } else {
-                this.showError(data.error || 'Geçersiz kullanıcı adı veya şifre.');
+                if (errEl) {
+                    errEl.textContent = data.error || 'Geçersiz e-posta veya şifre.';
+                    errEl.style.display = 'block';
+                }
             }
         } catch (e) {
-            this.showError('Giriş yapılamadı.');
+            if (errEl) {
+                errEl.textContent = 'Aktivasyon sunucusuna bağlanılamadı.';
+                errEl.style.display = 'block';
+            }
         }
     },
 
+    // 9. PIN Değiştirme
+    async submitChangePin() {
+        const userSelect = document.getElementById('changePinUserSelect');
+        const newPinInput = document.getElementById('newPinInput');
+        const confirmPinInput = document.getElementById('newPinConfirmInput');
+        const errEl = document.getElementById('changePinError');
+
+        const userId = userSelect ? userSelect.value : null;
+        const newPin = newPinInput ? newPinInput.value.trim() : '';
+        const confirmPin = confirmPinInput ? confirmPinInput.value.trim() : '';
+
+        if (!newPin || newPin.length < 4) {
+            if (errEl) {
+                errEl.textContent = 'Yeni PIN en az 4 haneli olmalıdır.';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            if (errEl) {
+                errEl.textContent = 'Girdiğiniz PIN kodları birbiriyle eşleşmiyor.';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/change-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ user_id: userId, new_pin: newPin })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (window.closeModal) window.closeModal('changePinModal');
+                if (window.showToast) window.showToast('PIN kodu başarıyla güncellendi.', 'success');
+                newPinInput.value = '';
+                confirmPinInput.value = '';
+                await this.loadUsers();
+            } else {
+                if (errEl) {
+                    errEl.textContent = data.message || 'PIN güncellenemedi.';
+                    errEl.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = 'Bağlantı hatası.';
+                errEl.style.display = 'block';
+            }
+        }
+    },
+
+    // 10. Yeni Kasiyer Ekleme
+    async submitNewCashier() {
+        const nameInput = document.getElementById('newCashierName');
+        const usernameInput = document.getElementById('newCashierUsername');
+        const pinInput = document.getElementById('newCashierPin');
+        const roleSelect = document.getElementById('newCashierRole');
+        const errEl = document.getElementById('newCashierError');
+
+        const name = nameInput ? nameInput.value.trim() : '';
+        const username = usernameInput ? usernameInput.value.trim() : '';
+        const pin = pinInput ? pinInput.value.trim() : '';
+        const role = roleSelect ? roleSelect.value : 'CASHIER';
+
+        if (!name || !username || !pin || pin.length < 4) {
+            if (errEl) {
+                errEl.textContent = 'Lütfen tüm alanları doldurun ve en az 4 haneli PIN girin.';
+                errEl.style.display = 'block';
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/register-cashier', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...this.getAuthHeaders() },
+                body: JSON.stringify({ name, username, pin, role })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (window.closeModal) window.closeModal('newCashierModal');
+                if (window.showToast) window.showToast(`Yeni personel eklendi: ${name}`, 'success');
+                nameInput.value = '';
+                usernameInput.value = '';
+                pinInput.value = '';
+                await this.loadUsers();
+            } else {
+                if (errEl) {
+                    errEl.textContent = data.message || 'Kasiyer eklenemedi.';
+                    errEl.style.display = 'block';
+                }
+            }
+        } catch (e) {
+            if (errEl) {
+                errEl.textContent = 'Bağlantı hatası.';
+                errEl.style.display = 'block';
+            }
+        }
+    },
+
+    // 11. Oturum Kilitleme & Çıkış
     async lockSession() {
         const token = this.getToken();
         if (token) {
@@ -348,15 +660,13 @@ const Auth = {
                     method: 'POST',
                     headers: this.getAuthHeaders()
                 });
-            } catch (e) {
-                console.warn('Lock request error:', e);
-            }
+            } catch (e) {}
         }
         if (this.currentSession) {
             this.currentSession.is_locked = true;
         }
         this.showLockScreen('unlock');
-        if (window.showToast) window.showToast('Ekran kilitlendi [F12]', 'info');
+        if (window.showToast) window.showToast('Kasa kilitlendi [F12]', 'info');
     },
 
     async logout() {
@@ -367,9 +677,7 @@ const Auth = {
                     method: 'POST',
                     headers: this.getAuthHeaders()
                 });
-            } catch (e) {
-                console.warn('Logout error:', e);
-            }
+            } catch (e) {}
         }
         this.setToken(null);
         this.currentSession = null;
@@ -378,32 +686,38 @@ const Auth = {
         if (window.showToast) window.showToast('Oturum kapatıldı', 'info');
     },
 
+    resetActivation() {
+        if (confirm('Cihaz aktivasyonunu sıfırlayıp farklı bir esnaf hesabı ile giriş yapmak istiyor musunuz?')) {
+            this.setActivated(false);
+            this.setToken(null);
+            this.currentSession = null;
+            this.showLockScreen('activation');
+            if (window.showToast) window.showToast('Cihaz sıfırlandı. Lütfen e-posta ile giriş yapın.', 'info');
+        }
+    },
+
+    // 12. Olay Dinleyicileri
     bindEvents() {
-        // Numpad key clicks
+        // Numpad butonları
         document.querySelectorAll('.auth-numpad-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 const val = btn.dataset.val;
                 if (val === 'backspace') {
                     this.backspacePin();
                 } else if (val === 'clear') {
                     this.clearPin();
-                } else if (val === 'enter') {
-                    this.submitPin();
                 } else if (val) {
                     this.appendPinDigit(val);
                 }
             });
         });
 
-        // Global Keyboard Event
+        // Klavye kısayolları
         window.addEventListener('keydown', (e) => {
-            // F12 to Lock
             if (e.key === 'F12') {
                 e.preventDefault();
                 const overlay = document.getElementById('authLockScreen');
-                if (overlay && overlay.classList.contains('active')) {
-                    // Already locked
-                } else {
+                if (!overlay || !overlay.classList.contains('active')) {
                     this.lockSession();
                 }
                 return;
@@ -412,16 +726,14 @@ const Auth = {
             const overlay = document.getElementById('authLockScreen');
             if (!overlay || !overlay.classList.contains('active')) return;
 
-            // Password view has regular form inputs, don't intercept unless enter
-            const passView = document.getElementById('authPasswordView');
-            if (passView && passView.style.display !== 'none') {
-                if (e.key === 'Enter') {
-                    this.submitPassword();
-                }
+            // Aktivasyon ekranında input alanları serbest olsun
+            const actView = document.getElementById('authActivationView');
+            if (actView && actView.style.display !== 'none') {
+                if (e.key === 'Enter') this.submitActivation();
                 return;
             }
 
-            // PIN View Key Handlers
+            // PIN ekranı tuşları
             if (e.key >= '0' && e.key <= '9') {
                 this.appendPinDigit(e.key);
             } else if (e.key === 'Backspace') {
@@ -433,54 +745,38 @@ const Auth = {
             }
         });
 
-        // Lock button in UI
-        const btnLock = document.getElementById('btnLockScreen');
-        if (btnLock) {
-            btnLock.addEventListener('click', () => this.lockSession());
-        }
+        // Üst bar butonları
+        document.getElementById('btnLockScreen')?.addEventListener('click', () => this.lockSession());
+        document.getElementById('btnLogout')?.addEventListener('click', () => this.logout());
+        document.getElementById('btnSidebarSwitchUser')?.addEventListener('click', () => {
+            this.showLockScreen('login');
+        });
 
-        // Logout buttons
-        const btnLogout = document.getElementById('btnLogout');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', () => this.logout());
-        }
+        // Kilit ekranı "Kullanıcı Değiştir"
+        document.getElementById('btnSwitchUser')?.addEventListener('click', () => {
+            this.showLockScreen('login');
+        });
 
-        const btnSwitchUser = document.getElementById('btnSwitchUser');
-        if (btnSwitchUser) {
-            btnSwitchUser.addEventListener('click', () => {
-                this.showLockScreen('login');
-            });
-        }
+        // Aktivasyon butonu
+        document.getElementById('btnSubmitActivation')?.addEventListener('click', () => this.submitActivation());
 
-        // Toggle to Password Mode
-        const btnTogglePass = document.getElementById('btnTogglePasswordMode');
-        if (btnTogglePass) {
-            btnTogglePass.addEventListener('click', () => {
-                const loginView = document.getElementById('authLoginView');
-                const passView = document.getElementById('authPasswordView');
-                if (loginView) loginView.style.display = 'none';
-                if (passView) passView.style.display = 'block';
-                this.clearPin();
-            });
-        }
+        // Cihaz Sıfırlama
+        document.getElementById('btnResetActivation')?.addEventListener('click', () => this.resetActivation());
 
-        // Back to PIN Mode
-        const btnBackToPin = document.getElementById('btnBackToPinMode');
-        if (btnBackToPin) {
-            btnBackToPin.addEventListener('click', () => {
-                const loginView = document.getElementById('authLoginView');
-                const passView = document.getElementById('authPasswordView');
-                if (loginView) loginView.style.display = 'block';
-                if (passView) passView.style.display = 'none';
-                this.clearPin();
-            });
-        }
+        // PIN Değiştirme Modalı aç/kapat
+        document.getElementById('btnOpenChangePinModal')?.addEventListener('click', () => {
+            if (window.openModal) window.openModal('changePinModal');
+        });
+        document.getElementById('btnSubmitChangePin')?.addEventListener('click', () => this.submitChangePin());
 
-        // Password submit button
-        const btnSubmitPassword = document.getElementById('btnSubmitPassword');
-        if (btnSubmitPassword) {
-            btnSubmitPassword.addEventListener('click', () => this.submitPassword());
-        }
+        // Yeni Kasiyer Modalı aç/kapat
+        document.getElementById('btnOpenNewCashierModal')?.addEventListener('click', () => {
+            if (window.openModal) window.openModal('newCashierModal');
+        });
+        document.getElementById('btnSubmitNewCashier')?.addEventListener('click', () => this.submitNewCashier());
+
+        // Yönetici PIN Onay butonu
+        document.getElementById('btnConfirmManagerAuth')?.addEventListener('click', () => this.confirmManagerAuth());
     }
 };
 

@@ -345,16 +345,88 @@ impl DatabaseManager {
         Ok(())
     }
 
+    /// Kullanıcının PIN kodunu güncelle (Esnafın kendi PIN'ini veya kasiyer PIN'ini değiştirmesi)
+    pub fn update_user_pin(&self, user_id: &str, new_pin: &str) -> Result<bool> {
+        let clean_pin = new_pin.trim();
+        if clean_pin.len() < 4 {
+            anyhow::bail!("PIN kodu en az 4 haneli olmalıdır.");
+        }
+        let conn = self.conn.lock();
+        let salt = Uuid::new_v4().simple().to_string();
+        let pin_hash = hash_with_salt(clean_pin, &salt);
+        let updated = conn.execute(
+            "UPDATE users SET pin_hash = ?1, pin_salt = ?2 WHERE id = ?3",
+            params![pin_hash, salt, user_id],
+        )?;
+        Ok(updated > 0)
+    }
+
+    /// Yeni kasiyer / personel ekle
+    pub fn create_cashier(&self, name: &str, username: &str, pin: &str, role: &str) -> Result<User> {
+        let clean_name = name.trim();
+        let clean_username = username.trim().to_lowercase();
+        let clean_pin = pin.trim();
+        if clean_name.is_empty() || clean_username.is_empty() || clean_pin.len() < 4 {
+            anyhow::bail!("Geçersiz isim, kullanıcı adı veya PIN.");
+        }
+
+        let conn = self.conn.lock();
+        let exists: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM users WHERE LOWER(username) = ?1",
+            params![clean_username],
+            |r| r.get(0),
+        )?;
+        if exists > 0 {
+            anyhow::bail!("Bu kullanıcı adı zaten kullanımda.");
+        }
+
+        let id = Uuid::new_v4().to_string();
+        let tenant = &self.config.tenant_id;
+        let salt = Uuid::new_v4().simple().to_string();
+        let pin_hash = hash_with_salt(clean_pin, &salt);
+        let pass_hash = hash_with_salt("123", &salt);
+        let now = Local::now().to_rfc3339();
+        let user_role = if role == "MANAGER" { "MANAGER" } else { "CASHIER" };
+
+        conn.execute(
+            "INSERT INTO users (id, tenant_id, name, username, pin_hash, pin_salt, password_hash, password_salt, role, is_active, failed_attempts, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?6, ?8, 1, 0, ?9)",
+            params![id, tenant, clean_name, clean_username, pin_hash, salt, pass_hash, user_role, now],
+        )?;
+
+        Ok(User {
+            id,
+            tenant_id: tenant.clone(),
+            name: clean_name.to_string(),
+            username: clean_username,
+            role: user_role.to_string(),
+            is_active: true,
+            created_at: now,
+        })
+    }
+
     /// Veritabanı ilk kurulduğunda varsayılan güvenli kullanıcıları oluştur
     pub fn seed_default_users(&self) -> Result<()> {
         let conn = self.conn.lock();
+
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))?;
 
         if count == 0 {
             let now = Local::now().to_rfc3339();
             let tenant = &self.config.tenant_id;
 
-            // Kasiyer: Ahmet (PIN: 1234, Şifre: 123)
+            // 1. Esnaf Mağaza Sahibi (Yönetici): esnaf@qordy.com (PIN: 9999, Şifre: esnaf123)
+            let salt0 = Uuid::new_v4().simple().to_string();
+            let pin_hash0 = hash_with_salt("9999", &salt0);
+            let pass_hash0 = hash_with_salt("esnaf123", &salt0);
+
+            conn.execute(
+                "INSERT INTO users (id, tenant_id, name, username, pin_hash, pin_salt, password_hash, password_salt, role, is_active, failed_attempts, created_at)
+                 VALUES (?1, ?2, 'Esnaf Mağaza Sahibi', 'esnaf@qordy.com', ?3, ?4, ?5, ?4, 'MANAGER', 1, 0, ?6)",
+                params![Uuid::new_v4().to_string(), tenant, pin_hash0, salt0, pass_hash0, now],
+            )?;
+
+            // 2. Kasiyer: Ahmet (PIN: 1234, Şifre: 123)
             let salt1 = Uuid::new_v4().simple().to_string();
             let pin_hash1 = hash_with_salt("1234", &salt1);
             let pass_hash1 = hash_with_salt("123", &salt1);
@@ -365,16 +437,67 @@ impl DatabaseManager {
                 params![Uuid::new_v4().to_string(), tenant, pin_hash1, salt1, pass_hash1, now],
             )?;
 
-            // Yönetici: Fatma (PIN: 9999, Şifre: admin)
+            // 3. Kasiyer: Ayşe (PIN: 5678, Şifre: 123)
             let salt2 = Uuid::new_v4().simple().to_string();
-            let pin_hash2 = hash_with_salt("9999", &salt2);
-            let pass_hash2 = hash_with_salt("admin", &salt2);
+            let pin_hash2 = hash_with_salt("5678", &salt2);
+            let pass_hash2 = hash_with_salt("123", &salt2);
 
             conn.execute(
                 "INSERT INTO users (id, tenant_id, name, username, pin_hash, pin_salt, password_hash, password_salt, role, is_active, failed_attempts, created_at)
-                 VALUES (?1, ?2, 'Fatma Yönetici', 'yonetici', ?3, ?4, ?5, ?4, 'MANAGER', 1, 0, ?6)",
+                 VALUES (?1, ?2, 'Ayşe Kasiyer', 'ayse', ?3, ?4, ?5, ?4, 'CASHIER', 1, 0, ?6)",
                 params![Uuid::new_v4().to_string(), tenant, pin_hash2, salt2, pass_hash2, now],
             )?;
+        } else {
+            // Mevcut veritabanlarında Esnaf Mağaza Sahibi kontrolü ve otomatik yükseltme
+            let esnaf_count: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM users WHERE username = 'esnaf@qordy.com'",
+                [],
+                |r| r.get(0),
+            ).unwrap_or(0);
+
+            if esnaf_count == 0 {
+                let tenant = &self.config.tenant_id;
+                let now = Local::now().to_rfc3339();
+                let salt0 = Uuid::new_v4().simple().to_string();
+                let pin_hash0 = hash_with_salt("9999", &salt0);
+                let pass_hash0 = hash_with_salt("esnaf123", &salt0);
+
+                let old_mgr_count: i64 = conn.query_row(
+                    "SELECT COUNT(*) FROM users WHERE username = 'yonetici'",
+                    [],
+                    |r| r.get(0),
+                ).unwrap_or(0);
+
+                if old_mgr_count > 0 {
+                    let _ = conn.execute(
+                        "UPDATE users SET name = 'Esnaf Mağaza Sahibi', username = 'esnaf@qordy.com', pin_hash = ?1, pin_salt = ?2, password_hash = ?3, password_salt = ?2 WHERE username = 'yonetici'",
+                        params![pin_hash0, salt0, pass_hash0],
+                    );
+                } else {
+                    let _ = conn.execute(
+                        "INSERT INTO users (id, tenant_id, name, username, pin_hash, pin_salt, password_hash, password_salt, role, is_active, failed_attempts, created_at)
+                         VALUES (?1, ?2, 'Esnaf Mağaza Sahibi', 'esnaf@qordy.com', ?3, ?4, ?5, ?4, 'MANAGER', 1, 0, ?6)",
+                        params![Uuid::new_v4().to_string(), tenant, pin_hash0, salt0, pass_hash0, now],
+                    );
+                }
+
+                let ayse_count: i64 = conn.query_row(
+                    "SELECT COUNT(*) FROM users WHERE username = 'ayse'",
+                    [],
+                    |r| r.get(0),
+                ).unwrap_or(0);
+
+                if ayse_count == 0 {
+                    let salt2 = Uuid::new_v4().simple().to_string();
+                    let pin_hash2 = hash_with_salt("5678", &salt2);
+                    let pass_hash2 = hash_with_salt("123", &salt2);
+                    let _ = conn.execute(
+                        "INSERT INTO users (id, tenant_id, name, username, pin_hash, pin_salt, password_hash, password_salt, role, is_active, failed_attempts, created_at)
+                         VALUES (?1, ?2, 'Ayşe Kasiyer', 'ayse', ?3, ?4, ?5, ?4, 'CASHIER', 1, 0, ?6)",
+                        params![Uuid::new_v4().to_string(), tenant, pin_hash2, salt2, pass_hash2, now],
+                    );
+                }
+            }
         }
 
         Ok(())
@@ -405,7 +528,7 @@ mod tests {
 
         // Kullanıcı listesi
         let users = db.list_active_users()?;
-        assert_eq!(users.len(), 2);
+        assert_eq!(users.len(), 3);
 
         // Kasiyer PIN girişi (Başarılı)
         let login_res = db.login_with_pin("1234", true)?;
@@ -437,14 +560,27 @@ mod tests {
         let unlocked_sess = db.validate_session(&token)?.unwrap();
         assert!(!unlocked_sess.is_locked);
 
-        // Yönetici Şifresi ile Giriş
-        let admin_res = db.login_with_password("yonetici", "admin", false)?;
+        // Esnaf Yönetici Şifresi ile Giriş
+        let admin_res = db.login_with_password("esnaf@qordy.com", "esnaf123", false)?;
         assert!(admin_res.success);
-        assert_eq!(admin_res.user.unwrap().role, "MANAGER");
+        assert_eq!(admin_res.user.as_ref().unwrap().role, "MANAGER");
 
         // Hatalı şifre
-        let fail_res = db.login_with_password("yonetici", "wrongpass", false)?;
+        let fail_res = db.login_with_password("esnaf@qordy.com", "wrongpass", false)?;
         assert!(!fail_res.success);
+
+        // PIN Güncelleme Testi
+        let user_id = admin_res.user.unwrap().id;
+        let update_pin_ok = db.update_user_pin(&user_id, "8888")?;
+        assert!(update_pin_ok);
+        let new_pin_login = db.login_with_pin("8888", false)?;
+        assert!(new_pin_login.success);
+
+        // Yeni Kasiyer Ekleme Testi
+        let new_cashier = db.create_cashier("Mehmet Kasiyer", "mehmet", "4321", "CASHIER")?;
+        assert_eq!(new_cashier.name, "Mehmet Kasiyer");
+        let mehmet_login = db.login_with_pin("4321", false)?;
+        assert!(mehmet_login.success);
 
         // Logout
         db.logout_session(&token)?;
@@ -459,11 +595,11 @@ mod tests {
 
         // 5 kez hatalı şifre denemesi
         for _ in 0..5 {
-            let _ = db.login_with_password("yonetici", "wrong", false);
+            let _ = db.login_with_password("esnaf@qordy.com", "wrong", false);
         }
 
         // 6. denemede güvenlik kilidi devreye girmeli
-        let res = db.login_with_password("yonetici", "admin", false)?;
+        let res = db.login_with_password("esnaf@qordy.com", "esnaf123", false)?;
         assert!(!res.success);
         assert!(res.is_locked);
         assert!(res.error.unwrap().contains("kilitlendi"));

@@ -1,1 +1,1 @@
-e690ea35b2cace5107e5ed698569c88eb6b84543c4e11ba0cc7ddd04db92ceee  /Users/neslihanaydogdu/Desktop/MobilApp/qordy_pos_rs/dist/QORDY_Esnaf_POS_v3.0.0_macOS.dmg
+e1d9e9ee867a88923ec60b810d4f6c4483675bb4d43c86e8b531f2bc5e091d77  /Users/neslihanaydogdu/Desktop/MobilApp/qordy_pos_rs/dist/QORDY_Esnaf_POS_v3.0.0_macOS.dmg

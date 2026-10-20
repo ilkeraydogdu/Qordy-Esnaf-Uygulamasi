@@ -2,7 +2,9 @@
 //! Secure PIN/Password authentication, session validation, lock/unlock, and user management.
 
 use crate::api::AppState;
-use crate::models::{AuthResponse, LoginRequest, UnlockRequest, User};
+use crate::models::{
+    AuthResponse, ChangePinRequest, CreateCashierRequest, LoginRequest, UnlockRequest, User,
+};
 use axum::{
     extract::{Query, State},
     http::HeaderMap,
@@ -185,4 +187,64 @@ pub async fn handle_logout(
         success: true,
         message: Some("Oturum kapatıldı.".to_string()),
     })
+}
+
+/// POST /api/auth/change-pin - Kullanıcı PIN kodunu güncelle
+pub async fn handle_change_pin(
+    State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
+    Json(payload): Json<ChangePinRequest>,
+) -> Json<SimpleSuccessResponse> {
+    let token_opt = extract_token(&headers, None);
+    let target_user_id = if let Some(uid) = payload.user_id {
+        uid
+    } else if let Some(token) = token_opt {
+        match state.db.validate_session(&token) {
+            Ok(Some(sess)) => sess.user_id,
+            _ => {
+                return Json(SimpleSuccessResponse {
+                    success: false,
+                    message: Some("Geçerli bir oturum bulunamadı.".to_string()),
+                });
+            }
+        }
+    } else {
+        return Json(SimpleSuccessResponse {
+            success: false,
+            message: Some("Kullanıcı ID veya oturum gereklidir.".to_string()),
+        });
+    };
+
+    match state.db.update_user_pin(&target_user_id, &payload.new_pin) {
+        Ok(true) => Json(SimpleSuccessResponse {
+            success: true,
+            message: Some("PIN kodu başarıyla güncellendi.".to_string()),
+        }),
+        Ok(false) => Json(SimpleSuccessResponse {
+            success: false,
+            message: Some("Kullanıcı bulunamadı.".to_string()),
+        }),
+        Err(e) => Json(SimpleSuccessResponse {
+            success: false,
+            message: Some(format!("PIN güncellenemedi: {}", e)),
+        }),
+    }
+}
+
+/// POST /api/auth/register-cashier - Yeni kasiyer/personel ekle
+pub async fn handle_register_cashier(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<CreateCashierRequest>,
+) -> Json<SimpleSuccessResponse> {
+    let role = payload.role.as_deref().unwrap_or("CASHIER");
+    match state.db.create_cashier(&payload.name, &payload.username, &payload.pin, role) {
+        Ok(_) => Json(SimpleSuccessResponse {
+            success: true,
+            message: Some(format!("Kasiyer '{}' başarıyla oluşturuldu.", payload.name)),
+        }),
+        Err(e) => Json(SimpleSuccessResponse {
+            success: false,
+            message: Some(format!("Kasiyer oluşturulamadı: {}", e)),
+        }),
+    }
 }

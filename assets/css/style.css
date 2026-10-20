@@ -1493,6 +1493,24 @@ body.dark-theme .toast-pill {
   color: var(--text-tertiary);
 }
 
+/* Role-based Restricted Menu Items for Cashier */
+.nav-item.cashier-restricted {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+  position: relative;
+}
+
+.nav-item.cashier-restricted::after {
+  content: '🔒';
+  position: absolute;
+  right: 12px;
+  font-size: 11px;
+}
+
+.nav-item.cashier-restricted:hover {
+  background: rgba(255, 149, 0, 0.08);
+}
+
 /* PIN Indicator Dots */
 .auth-pin-dots-container {
   display: flex;

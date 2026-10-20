@@ -56,6 +56,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/api/auth/lock", post(auth::handle_lock_session))
         .route("/api/auth/unlock", post(auth::handle_unlock_session))
         .route("/api/auth/logout", post(auth::handle_logout))
+        .route("/api/auth/change-pin", post(auth::handle_change_pin))
+        .route("/api/auth/register-cashier", post(auth::handle_register_cashier))
         // WebSocket Realtime Channel
         .route("/ws/pos", get(cfd::handle_ws_pos))
         // POS Core & Catalog

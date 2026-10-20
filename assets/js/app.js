@@ -234,6 +234,13 @@ const App = {
   },
 
   switchMainScreen(screenId) {
+    if (window.Auth && typeof window.Auth.canAccessScreen === 'function') {
+      if (!window.Auth.canAccessScreen(screenId)) {
+        window.Auth.requestManagerAccess(screenId);
+        return;
+      }
+    }
+
     document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item, .nav-seg-btn').forEach(b => b.classList.remove('active'));
 

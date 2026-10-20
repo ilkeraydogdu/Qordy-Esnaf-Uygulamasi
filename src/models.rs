@@ -538,6 +538,20 @@ pub struct UnlockRequest {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChangePinRequest {
+    pub user_id: Option<String>,
+    pub new_pin: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCashierRequest {
+    pub name: String,
+    pub username: String,
+    pub pin: String,
+    pub role: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthResponse {
     pub success: bool,
     pub token: Option<String>,
