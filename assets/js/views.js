@@ -502,15 +502,35 @@ const Views = {
     } catch (e) {}
   },
 
-  async openNewStockSessionModal() {
-    const title = prompt('Sayım Başlığı / Alanı:', `Genel Depo Sayımı - ${new Date().toLocaleDateString()}`);
-    if (!title) return;
+  openNewStockSessionModal() {
+    const titleInput = document.getElementById('nssTitleInput');
+    if (titleInput) {
+      titleInput.value = `Genel Depo / Reyon Sayımı - ${new Date().toLocaleDateString('tr-TR')}`;
+    }
+    const notesInput = document.getElementById('nssNotesInput');
+    if (notesInput) notesInput.value = '';
+    App.openModal('newStockSessionModal');
+  },
+
+  async submitNewStockSession() {
+    const title = document.getElementById('nssTitleInput')?.value?.trim();
+    const count_type = document.getElementById('nssTypeSelect')?.value || 'FULL';
+    const notes = document.getElementById('nssNotesInput')?.value?.trim() || null;
+
+    if (!title) {
+      App.showToast('Lütfen sayım başlığı giriniz!', true);
+      return;
+    }
 
     try {
-      const sess = await Api.createStockSession({ title, count_type: 'FULL', notes: null });
+      const sess = await Api.createStockSession({ title, count_type, notes });
+      App.closeModal('newStockSessionModal');
+      App.showToast(`Yeni sayım başlatıldı: ${title}`);
       this.loadStockSessions();
       this.openStockSessionDetail(sess.id, sess.title, 'OPEN');
-    } catch (e) {}
+    } catch (e) {
+      App.showToast('Sayım seansı başlatılamadı: ' + e.message, true);
+    }
   },
 
   async openStockSessionDetail(id, title, status) {
@@ -834,8 +854,8 @@ const Views = {
         <div class="z-report-paper">
           <div class="z-header-block">
             <div style="font-size:10.5px; font-weight:700; color:var(--text-secondary); letter-spacing:1px; margin-bottom:4px;">T.C. GELİR İDARESİ BAŞKANLIĞI MALİ MEVZUAT UYUMLU</div>
-            <div class="z-brand-title">CADDE CAFE &amp; MARKET</div>
-            <div class="z-branch-sub">${z.branch_name || 'Merkez Şube'} • Kasa: ${z.register_id || 'KASA-01'}</div>
+            <div class="z-brand-title">${(z.business_name || z.store_name || 'QORDY CADDE ESNAF').toUpperCase()}</div>
+            <div class="z-branch-sub">${z.branch_name || 'Kadıköy Çarşı Şubesi'} • Kasa: ${z.register_id || 'KASA-01'}</div>
             <div class="z-doc-title">GÜN SONU MALİ Z-RAPORU</div>
 
             <div class="z-meta-grid">
@@ -1261,7 +1281,11 @@ const Views = {
         <td>${c.min_subtotal > 0 ? c.min_subtotal.toFixed(2) + ' ₺' : 'Yok'}</td>
         <td>${statusBadge}</td>
         <td style="text-align:right;">
-          <button class="btn-top-action" onclick="Views.toggleCampaign('${c.id}')">${c.is_active ? '⏸️ Durdur' : '▶️ Başlat'}</button>
+          <button class="btn-top-action" onclick="Views.toggleCampaign('${c.id}')">
+            ${c.is_active 
+              ? '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:middle; margin-right:4px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>Durdur' 
+              : '<svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="vertical-align:middle; margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Başlat'}
+          </button>
           <button class="btn-top-action" style="color:var(--apple-red);" onclick="Views.deleteCampaign('${c.id}')">Sil</button>
         </td>
       `;

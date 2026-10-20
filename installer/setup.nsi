@@ -55,20 +55,38 @@ Section "MainSection" SEC01
   File "..\target\x86_64-pc-windows-gnu\release\${PRODUCT_EXE}"
 
   ; Assets
+  SetOutPath "$INSTDIR\assets"
+  File "..\assets\index.html"
+  File "..\assets\customer.html"
+
+  SetOutPath "$INSTDIR\assets\css"
+  File "..\assets\css\style.css"
+  File "..\assets\css\customer.css"
+
+  SetOutPath "$INSTDIR\assets\js"
+  File "..\assets\js\api.js"
+  File "..\assets\js\app.js"
+  File "..\assets\js\auth.js"
+  File "..\assets\js\cart.js"
+  File "..\assets\js\customer.js"
+  File "..\assets\js\terminal.js"
+  File "..\assets\js\views.js"
+
   SetOutPath "$INSTDIR\assets\images"
-  File "..\assets\images\caddecafe_logo.webp"
+  File "..\assets\images\app.ico"
+  File "..\assets\images\favicon.ico"
+  File "..\assets\images\favicon.png"
   File "..\assets\images\logo.webp"
   File "..\assets\images\logo_light.webp"
   File "..\assets\images\qordy_app_icon.png"
-  File "..\assets\images\favicon.png"
   File "..\assets\images\pofuduk-logo.svg"
 
   ; Create Desktop and Start Menu Shortcuts
   SetOutPath "$INSTDIR"
   CreateDirectory "$SMPROGRAMS\QORDY"
-  CreateShortcut "$SMPROGRAMS\QORDY\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\assets\images\favicon.png" 0
+  CreateShortcut "$SMPROGRAMS\QORDY\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\assets\images\app.ico" 0
   CreateShortcut "$SMPROGRAMS\QORDY\Kaldır.lnk" "$INSTDIR\uninst.exe"
-  CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\assets\images\favicon.png" 0
+  CreateShortcut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\${PRODUCT_EXE}" "" "$INSTDIR\assets\images\app.ico" 0
 SectionEnd
 
 Section -Post

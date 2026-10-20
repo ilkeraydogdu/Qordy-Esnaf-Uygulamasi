@@ -1239,36 +1239,51 @@ body.dark-theme .product-tile:hover, body.dark-theme .pos-tile:hover {
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Toast */
-/* Toast - Positioned at Bottom-Right so it NEVER blocks headers or buttons */
-.toast-pill {
+/* Toast HUD - Centered at Bottom (Non-Intrusive, never covers header/buttons/cart) */
+.toast-container {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  top: auto;
-  left: auto;
-  transform: none;
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--card-border);
-  border-left: 4px solid var(--accent);
-  padding: 12px 20px;
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  display: none;
-  z-index: 99999;
-  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   pointer-events: none;
-  max-width: 380px;
-  line-height: 1.4;
 }
 
-@keyframes toastSlideUp {
-  from { transform: translateY(24px) scale(0.96); opacity: 0; }
+.toast-pill {
+  position: relative;
+  pointer-events: auto;
+  background: rgba(28, 28, 30, 0.94);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 4px solid var(--apple-green);
+  padding: 11px 20px;
+  border-radius: 9999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  animation: toastFloatUp 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 520px;
+  line-height: 1.4;
+  cursor: pointer;
+  user-select: none;
+}
+
+body.dark-theme .toast-pill {
+  background: rgba(36, 36, 38, 0.94);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+@keyframes toastFloatUp {
+  from { transform: translateY(20px) scale(0.95); opacity: 0; }
   to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
@@ -1854,4 +1869,95 @@ body.dark-theme .z-report-paper {
 
 body.dark-theme .z-vat-table td {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ==========================================================================
+   POS CATEGORIES STRIP & PILLS
+   ========================================================================== */
+.catalog-categories {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 10px 2px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+}
+.catalog-categories::-webkit-scrollbar {
+  display: none;
+}
+.cat-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.cat-pill-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-color: var(--card-border-hover);
+}
+.cat-pill-btn.active {
+  background: var(--apple-blue);
+  color: #ffffff;
+  border-color: var(--apple-blue);
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+/* ==========================================================================
+   PRINT MEDIA STYLES (Z-Report & Shelf Labels Thermal/A4 Output)
+   ========================================================================== */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10pt !important;
+  }
+  .app-sidebar,
+  .view-header .header-actions-group,
+  .cart-actions,
+  .toast-container,
+  .modal-overlay,
+  .search-strip,
+  .theme-toggle-row,
+  .auth-lock-overlay {
+    display: none !important;
+  }
+  .app-layout {
+    display: block !important;
+  }
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  .screen-view {
+    display: none !important;
+  }
+  .screen-view.active {
+    display: block !important;
+  }
+  .z-report-paper {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+  .shelf-label-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #111 !important;
+  }
 }

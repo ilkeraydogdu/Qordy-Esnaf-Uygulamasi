@@ -45,24 +45,23 @@ const Cart = {
 
   addItem(product) {
     if (product.is_weighed) {
-      const weightInput = prompt(`${product.name} tartım gramajını girin (Örn: 1.450 veya 1450g):`, "1.000");
-      if (!weightInput) return;
-      let qty = parseFloat(weightInput.replace(',', '.'));
-      if (qty > 50) qty = qty / 1000;
-
-      this.pushItem({
-        product_id: product.id,
-        barcode: product.barcode,
-        name: product.name,
-        unit_price: product.price,
-        quantity: qty,
-        unit: 'kg',
-        vat_rate: product.vat_rate,
-        discount: 0.0,
-        total: qty * product.price,
-        is_weighed: true,
-        notes: null
-      });
+      if (typeof App !== 'undefined' && App.openWeighModal) {
+        App.openWeighModal(product);
+      } else {
+        this.pushItem({
+          product_id: product.id,
+          barcode: product.barcode,
+          name: product.name,
+          unit_price: product.price,
+          quantity: 1.0,
+          unit: 'kg',
+          vat_rate: product.vat_rate,
+          discount: 0.0,
+          total: product.price,
+          is_weighed: true,
+          notes: null
+        });
+      }
     } else {
       const existing = this.items.find(i => i.product_id === product.id && !i.is_weighed);
       if (existing) {

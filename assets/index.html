@@ -14,11 +14,11 @@
     <!-- Brand & Window Controls -->
     <div class="sidebar-brand-card">
       <div class="brand-logo-wrap">
-        <img src="/assets/images/caddecafe_logo.webp" alt="QORDY" class="brand-avatar" width="44" height="44" style="width:44px; height:44px; min-width:44px; max-width:44px; min-height:44px; max-height:44px; border-radius:12px; object-fit:cover; flex-shrink:0;" onerror="this.src='/assets/images/qordy_app_icon.png'" />
+        <img src="/assets/images/qordy_app_icon.png" alt="QORDY" class="brand-avatar" width="44" height="44" style="width:44px; height:44px; min-width:44px; max-width:44px; min-height:44px; max-height:44px; border-radius:12px; object-fit:contain; flex-shrink:0; background:var(--bg-card); padding:2px; border:1px solid var(--card-border);" />
         <div class="brand-meta">
-          <div class="brand-title" id="hdrStoreName">Cadde Cafe &amp; Market</div>
+          <div class="brand-title" id="hdrStoreName">QORDY Cadde Esnaf</div>
           <div class="brand-subtitle">
-            <span class="tenant-code-badge" id="hdrBranch">Merkez Şube</span> • Kasa: <span id="hdrRegisterId">#1</span>
+            <span class="tenant-code-badge" id="hdrBranch">Kadıköy Çarşı Şubesi</span> • Kasa: <span id="hdrRegisterId">KASA-01</span>
           </div>
         </div>
       </div>
@@ -1356,13 +1356,13 @@
   <div class="auth-lock-overlay" id="authLockScreen">
     <div class="auth-card">
       <div class="auth-brand-crest">
-        <img src="/assets/images/caddecafe_logo.webp" alt="Cadde Cafe" class="auth-brand-logo" onerror="this.src='/assets/images/qordy_app_icon.png'" />
+        <img src="/assets/images/qordy_app_icon.png" alt="QORDY" class="auth-brand-logo" style="width:48px; height:48px; border-radius:12px; object-fit:contain; background:var(--bg-card); padding:2px; border:1px solid var(--card-border);" />
       </div>
 
       <!-- VIEW 1: Cashier Login (Avatar Picker + PIN Numpad) -->
       <div id="authLoginView">
-        <div class="auth-title">Kasa Oturumu Aç</div>
-        <div class="auth-subtitle">Devam etmek için kasiyer seçin ve PIN kodunuzu girin</div>
+        <div class="auth-title">QORDY Esnaf Market</div>
+        <div class="auth-subtitle">Kasiyer PIN Doğrulama &amp; Güvenli Kasa Girişi</div>
 
         <!-- Cashier Avatar Picker -->
         <div class="auth-cashiers-grid" id="authCashierList"></div>
@@ -1395,7 +1395,9 @@
           <button type="button" class="auth-numpad-btn" data-val="9">9<span class="btn-sub">WXYZ</span></button>
           <button type="button" class="auth-numpad-btn btn-action" data-val="clear">C</button>
           <button type="button" class="auth-numpad-btn" data-val="0">0</button>
-          <button type="button" class="auth-numpad-btn btn-action" data-val="backspace">⌫</button>
+          <button type="button" class="auth-numpad-btn btn-action" data-val="backspace" title="Geri Sil">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+          </button>
         </div>
 
         <div class="auth-bottom-links">
@@ -1436,7 +1438,9 @@
           <button type="button" class="auth-numpad-btn" data-val="9">9<span class="btn-sub">WXYZ</span></button>
           <button type="button" class="auth-numpad-btn btn-action" data-val="clear">C</button>
           <button type="button" class="auth-numpad-btn" data-val="0">0</button>
-          <button type="button" class="auth-numpad-btn btn-action" data-val="backspace">⌫</button>
+          <button type="button" class="auth-numpad-btn btn-action" data-val="backspace" title="Geri Sil">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block; vertical-align:middle;"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+          </button>
         </div>
 
         <div style="margin-top:16px;">
@@ -1549,10 +1553,104 @@
     </div>
   </div>
 
+  <!-- Tartım & Hassas Terazi Modalı (Weigh Scale Modal) -->
+  <div class="modal-overlay" id="weighScaleModal" style="display:none; z-index:99999;">
+    <div class="modal-window" style="max-width:440px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v9l4 4"></path></svg>
+        <span>Tartılı Ürün Gramajı</span>
+      </div>
+      <div style="background:var(--bg-subtle); padding:16px; border-radius:12px; border:1px solid var(--card-border); margin-bottom:14px;">
+        <div style="font-size:16px; font-weight:800; color:var(--text-primary);" id="weighProdName">-</div>
+        <div style="font-size:13px; color:var(--text-secondary); margin-top:3px;">
+          Birim Fiyat: <b style="color:var(--apple-blue);" id="weighProdPrice">0.00 ₺ / kg</b>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label class="form-label" style="font-size:12.5px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; display:block;">Ağırlık Miktarı:</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="number" id="weighInputQty" class="form-input" style="font-size:22px; font-weight:800; text-align:center; padding:10px;" placeholder="1.000" step="0.05" min="0.01" />
+          <span style="font-weight:700; color:var(--text-primary); font-size:18px;">kg</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:16px;">
+        <button type="button" class="btn-top-action" style="justify-content:center; padding:8px 0; font-weight:700;" onclick="App.setWeighQty(0.25)">250g</button>
+        <button type="button" class="btn-top-action" style="justify-content:center; padding:8px 0; font-weight:700;" onclick="App.setWeighQty(0.50)">500g</button>
+        <button type="button" class="btn-top-action" style="justify-content:center; padding:8px 0; font-weight:700;" onclick="App.setWeighQty(1.00)">1 kg</button>
+        <button type="button" class="btn-top-action" style="justify-content:center; padding:8px 0; font-weight:700;" onclick="App.setWeighQty(1.50)">1.5 kg</button>
+        <button type="button" class="btn-top-action" style="justify-content:center; padding:8px 0; font-weight:700;" onclick="App.setWeighQty(2.00)">2 kg</button>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-card); padding:12px 16px; border-radius:10px; border:1px solid var(--card-border); margin-bottom:16px;">
+        <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">Hesaplanan Tutar:</span>
+        <span style="font-size:22px; font-weight:900; color:var(--apple-green);" id="weighCalculatedTotal">0.00 ₺</span>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn-secondary" onclick="App.closeModal('weighScaleModal')">Vazgeç</button>
+        <button type="button" class="btn-apple" style="padding:10px 24px;" onclick="App.confirmWeighItem()">Sepete Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sepet Bekletme Notu Modalı (Park Cart Modal) -->
+  <div class="modal-overlay" id="parkCartModal" style="display:none; z-index:99999;">
+    <div class="modal-window" style="max-width:400px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        <span>Sepeti Bekletmeye Al</span>
+      </div>
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px; line-height:1.4;">
+        Mevcut sepeti beklemeye alarak sıradaki müşterinin işlemine devam edebilirsiniz.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Müşteri / Not Tanımı:</label>
+        <input type="text" id="parkCartNoteInput" class="form-input" placeholder="Örn: Sıradaki Müşteri, Ahmet Bey..." value="Müşteri 1" />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
+        <button type="button" class="btn-secondary" onclick="App.closeModal('parkCartModal')">Vazgeç</button>
+        <button type="button" class="btn-apple" onclick="App.confirmParkCart()">Beklet (F7)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Sayım Seansı Başlatma Modalı (Stock Session Modal) -->
+  <div class="modal-overlay" id="newStockSessionModal" style="display:none; z-index:99999;">
+    <div class="modal-window" style="max-width:440px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+        <span>Yeni Sayım Seansı Başlat</span>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Sayım Başlığı / Alanı:</label>
+        <input type="text" id="nssTitleInput" class="form-input" placeholder="Örn: Genel Depo Sayımı, Manav Reyonu..." />
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label class="form-label">Sayım Türü:</label>
+        <select id="nssTypeSelect" class="form-input">
+          <option value="FULL">Tüm Mağaza / Depo Sayımı</option>
+          <option value="PARTIAL">Kısmi / Reyon Bazlı Sayım</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Notlar (Opsiyonel):</label>
+        <input type="text" id="nssNotesInput" class="form-input" placeholder="Sayım gerekçesi veya açıklama..." />
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" class="btn-secondary" onclick="App.closeModal('newStockSessionModal')">Vazgeç</button>
+        <button type="button" class="btn-apple" onclick="Views.submitNewStockSession()">Sayımı Başlat</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Evrensel Onay Modalı (Native Desktop Confirm) -->
   <div class="modal-overlay" id="appConfirmModal" style="display:none; z-index:99999;">
     <div class="modal-window" style="max-width:440px; text-align:center; padding:24px;">
-      <div id="confirmModalIcon" style="font-size:36px; margin-bottom:10px;">⚠️</div>
+      <div id="confirmModalIcon" style="display:flex; justify-content:center; align-items:center; margin-bottom:12px;">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="var(--apple-amber)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </div>
       <div class="modal-heading" id="confirmModalTitle" style="font-size:18px; font-weight:700; margin-bottom:8px;">İşlemi Onaylayın</div>
       <p id="confirmModalMessage" style="font-size:13px; color:var(--text-secondary); margin:8px 0 20px 0; line-height:1.5;"></p>
       <div style="display:flex; justify-content:center; gap:12px;">
@@ -1562,15 +1660,17 @@
     </div>
   </div>
 
-  <!-- Global Toast -->
-  <div class="toast-pill" id="globalToast"></div>
+  <!-- Global Toast Container (Bottom-Center Non-Intrusive HUD) -->
+  <div class="toast-container" id="toastContainer">
+    <div class="toast-pill" id="globalToast"></div>
+  </div>
 
   <!-- Modular Scripts -->
-  <script src="/assets/js/api.js?v=20261020_6"></script>
-  <script src="/assets/js/cart.js?v=20261020_6"></script>
-  <script src="/assets/js/terminal.js?v=20261020_6"></script>
-  <script src="/assets/js/views.js?v=20261020_6"></script>
-  <script src="/assets/js/auth.js?v=20261020_6"></script>
-  <script src="/assets/js/app.js?v=20261020_6"></script>
+  <script src="/assets/js/api.js?v=20261020_7"></script>
+  <script src="/assets/js/cart.js?v=20261020_7"></script>
+  <script src="/assets/js/terminal.js?v=20261020_7"></script>
+  <script src="/assets/js/views.js?v=20261020_7"></script>
+  <script src="/assets/js/auth.js?v=20261020_7"></script>
+  <script src="/assets/js/app.js?v=20261020_7"></script>
 </body>
 </html>

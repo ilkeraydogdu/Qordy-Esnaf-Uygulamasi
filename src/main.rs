@@ -116,11 +116,30 @@ fn main() -> Result<()> {
     // 6. Masaüstü Penceresi ve Wry Webview Başlat
     info!("Yerel Masaüstü Arayüzü başlatılıyor (Tao + Wry)...");
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new()
+
+    let window_icon = {
+        if let Ok(img) = image::load_from_memory(include_bytes!("../assets/images/favicon.png")) {
+            let rgba = img.into_rgba8();
+            let (w, h) = rgba.dimensions();
+            tao::window::Icon::from_rgba(rgba.into_raw(), w, h).ok()
+        } else {
+            None
+        }
+    };
+
+    let mut win_builder = WindowBuilder::new()
         .with_title("QORDY Esnaf POS - Çevrimdışı Perakende & Hızlı Satış")
         .with_inner_size(LogicalSize::new(1280.0, 820.0))
-        .with_min_inner_size(LogicalSize::new(1024.0, 680.0))
-        .build(&event_loop)?;
+        .with_min_inner_size(LogicalSize::new(1024.0, 680.0));
+
+    if let Some(w_icon) = window_icon {
+        win_builder = win_builder.with_window_icon(Some(w_icon));
+    }
+
+    let window = win_builder.build(&event_loop)?;
+
+    #[cfg(target_os = "macos")]
+    set_macos_dock_icon();
 
     let pos_url = format!("http://127.0.0.1:{}", port);
 
@@ -145,4 +164,46 @@ fn main() -> Result<()> {
             }
         }
     });
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated, unexpected_cfgs)]
+fn set_macos_dock_icon() {
+    use cocoa::base::{id, nil};
+    use cocoa::foundation::NSString;
+    use objc::{msg_send, sel, sel_impl};
+
+    unsafe {
+        let app: id = msg_send![objc::class!(NSApplication), sharedApplication];
+        let mut candidates = Vec::new();
+
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                if let Some(contents) = exe_dir.parent() {
+                    candidates.push(contents.join("Resources").join("AppIcon.icns"));
+                    candidates.push(contents.join("Resources").join("assets").join("AppIcon.icns"));
+                    candidates.push(contents.join("Resources").join("assets").join("favicon.png"));
+                }
+            }
+        }
+        candidates.push(std::path::PathBuf::from("assets/images/AppIcon.icns"));
+        candidates.push(std::path::PathBuf::from("assets/images/favicon.png"));
+        candidates.push(std::path::PathBuf::from("assets/images/qordy_app_icon.png"));
+
+        for path in candidates {
+            if path.exists() {
+                if let Ok(abs_path) = std::fs::canonicalize(&path) {
+                    let path_str = abs_path.to_string_lossy();
+                    let ns_str = NSString::alloc(nil).init_str(&path_str);
+                    let img: id = msg_send![objc::class!(NSImage), alloc];
+                    let img: id = msg_send![img, initWithContentsOfFile: ns_str];
+                    if img != nil {
+                        let _: () = msg_send![app, setApplicationIconImage: img];
+                        info!("macOS Dock uygulama ikonu başarıyla ayarlandı: {:?}", path);
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }

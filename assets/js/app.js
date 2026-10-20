@@ -16,7 +16,7 @@ const App = {
 
     setInterval(() => this.fetchStatus(), 3000);
 
-    // Barcode scanner listener on the input field
+    // Barcode scanner & search input listener
     const barcodeInput = document.getElementById('posBarcodeField');
     if (barcodeInput) {
       barcodeInput.addEventListener('keydown', (e) => {
@@ -24,7 +24,11 @@ const App = {
           e.preventDefault();
           this.handleBarcodeScan(barcodeInput.value);
           barcodeInput.value = '';
+          this.renderPosTiles();
         }
+      });
+      barcodeInput.addEventListener('input', () => {
+        this.renderPosTiles();
       });
     }
 
@@ -150,26 +154,68 @@ const App = {
     setTimeout(() => this.fetchStatus(), 1500);
   },
 
+  activePosCategory: 'ALL',
+  quickProducts: [],
+
   async loadCatalog() {
     try {
       const list = await Api.getQuickProducts();
-      const grid = document.getElementById('posTilesGrid');
-      if (!grid) return;
-      grid.innerHTML = '';
-      list.forEach(p => {
-        const tile = document.createElement('div');
-        tile.className = `pos-tile ${p.is_weighed ? 'weighed' : 'standard'}`;
-        tile.onclick = () => Cart.addItem(p);
-        tile.innerHTML = `
-          <div class="tile-text">${p.name}</div>
-          <div class="tile-bottom">
-            <span class="tile-val">${p.price.toFixed(2)} ₺</span>
-            <span class="tile-unit-label">${p.is_weighed ? 'kg başına' : p.unit}</span>
-          </div>
-        `;
-        grid.appendChild(tile);
-      });
+      this.quickProducts = list || [];
+      this.renderPosCategories();
+      this.renderPosTiles();
     } catch (e) {}
+  },
+
+  renderPosCategories() {
+    const bar = document.getElementById('posCategoriesBar');
+    if (!bar) return;
+    const allCats = [...new Set(this.quickProducts.map(p => p.category).filter(Boolean))].sort();
+    const cats = ['ALL', ...allCats];
+    bar.innerHTML = '';
+    cats.forEach(c => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `cat-pill-btn ${this.activePosCategory === c ? 'active' : ''}`;
+      btn.textContent = c === 'ALL' ? 'Tüm Ürünler' : c;
+      btn.onclick = () => {
+        this.activePosCategory = c;
+        this.renderPosCategories();
+        this.renderPosTiles();
+      };
+      bar.appendChild(btn);
+    });
+  },
+
+  renderPosTiles() {
+    const grid = document.getElementById('posTilesGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const q = (document.getElementById('posBarcodeField')?.value || '').toLowerCase().trim();
+    const filtered = this.quickProducts.filter(p => {
+      const matchCat = this.activePosCategory === 'ALL' || p.category === this.activePosCategory;
+      const matchQ = !q || p.name.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
+      return matchCat && matchQ;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:36px; color:var(--text-secondary); font-size:13px;">Bu kategoride veya aramada hızlı ürün bulunamadı.</div>';
+      return;
+    }
+
+    filtered.forEach(p => {
+      const tile = document.createElement('div');
+      tile.className = `pos-tile ${p.is_weighed ? 'weighed' : 'standard'}`;
+      tile.onclick = () => Cart.addItem(p);
+      tile.innerHTML = `
+        <div class="tile-text">${p.name}</div>
+        <div class="tile-bottom">
+          <span class="tile-val">${p.price.toFixed(2)} ₺</span>
+          <span class="tile-unit-label">${p.is_weighed ? 'kg başına' : p.unit}</span>
+        </div>
+      `;
+      grid.appendChild(tile);
+    });
   },
 
   async handleBarcodeScan(barcode) {
@@ -319,18 +365,97 @@ const App = {
     this.renderVeresiyeSelectionList(filtered);
   },
 
-  // Parked Carts
-  async parkCurrentCart() {
-    if (Cart.getItems().length === 0) return;
-    const note = prompt('Bu sepet için bir not / masa / müşteri adı girin:', 'Müşteri 1');
-    if (!note) return;
+  // Weigh Scale Modal for Bulk / Grammage Items
+  activeWeighProduct: null,
 
+  openWeighModal(product) {
+    this.activeWeighProduct = product;
+    const nameEl = document.getElementById('weighProdName');
+    const priceEl = document.getElementById('weighProdPrice');
+    const input = document.getElementById('weighInputQty');
+    if (nameEl) nameEl.textContent = product.name;
+    if (priceEl) priceEl.textContent = `${product.price.toFixed(2)} ₺ / kg`;
+    if (input) {
+      input.value = '1.000';
+      input.oninput = () => this.updateWeighCalc();
+    }
+    this.updateWeighCalc();
+    this.openModal('weighScaleModal');
+    setTimeout(() => {
+      if (input) { input.focus(); input.select(); }
+    }, 120);
+  },
+
+  setWeighQty(val) {
+    const input = document.getElementById('weighInputQty');
+    if (input) {
+      input.value = val.toFixed(3);
+      this.updateWeighCalc();
+    }
+  },
+
+  updateWeighCalc() {
+    if (!this.activeWeighProduct) return;
+    const input = document.getElementById('weighInputQty');
+    let qty = parseFloat(input?.value?.replace(',', '.')) || 0;
+    if (qty > 50) qty = qty / 1000;
+    const total = qty * this.activeWeighProduct.price;
+    const totalEl = document.getElementById('weighCalculatedTotal');
+    if (totalEl) totalEl.textContent = `${total.toFixed(2)} ₺`;
+  },
+
+  confirmWeighItem() {
+    if (!this.activeWeighProduct) return;
+    const input = document.getElementById('weighInputQty');
+    let qty = parseFloat(input?.value?.replace(',', '.')) || 0;
+    if (qty > 50) qty = qty / 1000;
+
+    if (qty <= 0) {
+      this.showToast('Lütfen geçerli bir ağırlık miktarı giriniz!', true);
+      return;
+    }
+
+    Cart.pushItem({
+      product_id: this.activeWeighProduct.id,
+      barcode: this.activeWeighProduct.barcode,
+      name: this.activeWeighProduct.name,
+      unit_price: this.activeWeighProduct.price,
+      quantity: qty,
+      unit: 'kg',
+      vat_rate: this.activeWeighProduct.vat_rate,
+      discount: 0.0,
+      total: qty * this.activeWeighProduct.price,
+      is_weighed: true,
+      notes: null
+    });
+
+    this.closeModal('weighScaleModal');
+    this.showToast(`${this.activeWeighProduct.name} (${qty.toFixed(3)} kg) eklendi`);
+    this.activeWeighProduct = null;
+  },
+
+  // Parked Carts
+  parkCurrentCart() {
+    if (Cart.getItems().length === 0) {
+      this.showToast('Bekletilecek sepet boş!', true);
+      return;
+    }
+    const noteInput = document.getElementById('parkCartNoteInput');
+    if (noteInput) noteInput.value = `Müşteri ${Math.floor(1 + Math.random() * 9)}`;
+    this.openModal('parkCartModal');
+  },
+
+  async confirmParkCart() {
+    const note = document.getElementById('parkCartNoteInput')?.value?.trim() || 'Müşteri 1';
     try {
       await Api.parkCart({ note, items: Cart.getItems() });
-      this.showToast('Sepet bekletmeye alındı');
+      this.closeModal('parkCartModal');
+      this.showToast(`Sepet (${note}) bekletmeye alındı`);
       Cart.clear();
       this.loadParkedCount();
-    } catch (e) {}
+    } catch (e) {
+      this.showToast('Sepet bekletilemedi: ' + e.message, true);
+    }
   },
 
   async loadParkedCount() {
@@ -442,10 +567,19 @@ const App = {
     const t = document.getElementById('globalToast');
     if (!t) return;
     if (this.toastTimer) clearTimeout(this.toastTimer);
-    t.innerHTML = `<span style="margin-right:8px; font-size:15px; flex-shrink:0;">${isError ? '⚠️' : '✅'}</span><span>${msg}</span>`;
+
+    const iconSvg = isError
+      ? `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--apple-red)" stroke-width="2.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`
+      : `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--apple-green)" stroke-width="2.5" style="flex-shrink:0;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+
+    t.innerHTML = `${iconSvg}<span style="flex:1;">${msg}</span><button type="button" style="background:transparent; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px; margin-left:8px; line-height:1; padding:2px 4px;" onclick="event.stopPropagation(); this.parentElement.style.display='none';">&times;</button>`;
     t.style.borderLeftColor = isError ? 'var(--apple-red)' : 'var(--apple-green)';
     t.style.display = 'inline-flex';
-    t.style.alignItems = 'center';
+
+    t.onclick = () => {
+      t.style.display = 'none';
+    };
+
     this.toastTimer = setTimeout(() => {
       t.style.display = 'none';
       this.toastTimer = null;
