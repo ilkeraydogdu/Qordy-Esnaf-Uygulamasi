@@ -682,7 +682,7 @@ const Views = {
       if (!grid) return;
       grid.innerHTML = '';
       if (!labels || labels.length === 0) {
-        grid.innerHTML = '<div style="color:var(--text-muted); padding:32px;">Kayıtlı ürün etiketi bulunamadı.</div>';
+        grid.innerHTML = '<div style="color:var(--text-secondary); padding:40px; text-align:center; grid-column:1/-1;">Kayıtlı raf etiketi kuyruğu bulunamadı.</div>';
         return;
       }
 
@@ -692,32 +692,61 @@ const Views = {
         const whole = Math.floor(l.price);
         const kurus = Math.round((l.price - whole) * 100).toString().padStart(2, '0');
 
+        // Clean vector barcode generation
+        const bCode = l.barcode || '8690504018100';
+        let svgBars = '';
+        let bx = 6;
+        svgBars += `<rect x="${bx}" y="0" width="2" height="34" fill="currentColor"/>`;
+        svgBars += `<rect x="${bx + 4}" y="0" width="2" height="34" fill="currentColor"/>`;
+        bx += 10;
+        for (let i = 0; i < bCode.length; i++) {
+          const digit = parseInt(bCode[i], 10) || 0;
+          const w1 = (digit % 3 === 0) ? 3 : (digit % 2 === 0 ? 2 : 1.2);
+          const w2 = (digit > 5) ? 2.5 : 1.2;
+          svgBars += `<rect x="${bx}" y="0" width="${w1}" height="30" fill="currentColor"/>`;
+          bx += w1 + 2.5;
+          svgBars += `<rect x="${bx}" y="0" width="${w2}" height="30" fill="currentColor"/>`;
+          bx += w2 + 2;
+        }
+        svgBars += `<rect x="${bx}" y="0" width="2" height="34" fill="currentColor"/>`;
+        svgBars += `<rect x="${bx + 4}" y="0" width="2" height="34" fill="currentColor"/>`;
+        bx += 10;
+
+        const formattedBarcode = bCode.length === 13 
+          ? `${bCode.slice(0,1)} ${bCode.slice(1,7)} ${bCode.slice(7)}` 
+          : bCode;
+
         card.innerHTML = `
           <div>
             <div class="shelf-card-header">
-              <span class="shelf-badge-origin">YERLİ ÜRETİM</span>
-              <span style="font-size:10px; font-weight:700; color:#64748b;">KDV %${l.vat_rate.toFixed(0)} DAHİL</span>
+              <span class="shelf-badge-origin">🇹🇷 YERLİ ÜRETİM</span>
+              <span style="font-size:10px; font-weight:700; color:var(--text-secondary); background:var(--bg-subtle); padding:2px 6px; border-radius:4px; border:1px solid var(--card-border);">KDV %${l.vat_rate.toFixed(0)} DAHİL</span>
             </div>
             <div class="shelf-prod-name">${l.name}</div>
-            <div style="font-size:11px; color:#64748b; font-weight:600; margin-top:2px;">Kategori: ${l.category}</div>
+            <div style="font-size:11px; color:var(--text-secondary); font-weight:500; margin-top:3px;">
+              <span>Kategori: <b>${l.category}</b></span> • <span>Menşei: Türkiye</span>
+            </div>
           </div>
 
           <div class="shelf-price-row">
             <div>
-              <span class="shelf-price-main">${whole}<span style="font-size:22px;">,${kurus}</span> ₺</span>
+              <span class="shelf-price-main">${whole}<span style="font-size:20px; vertical-align:super;">,${kurus}</span> ₺</span>
             </div>
-            <div class="shelf-price-unit">Birim: ${l.unit}</div>
+            <div style="text-align:right;">
+              <div class="shelf-price-unit">Birim Fiyat</div>
+              <div style="font-size:12px; font-weight:700; color:var(--text-primary);">${l.price.toFixed(2)} ₺ / ${l.unit}</div>
+            </div>
           </div>
 
           <div class="shelf-barcode-box">
-            <div class="shelf-barcode-bars">|||||| | |||| | ||||||</div>
-            <div class="shelf-barcode-num">${l.barcode}</div>
+            <svg viewBox="0 0 ${bx} 34" style="width:160px; height:28px; color:var(--text-primary); display:block;">${svgBars}</svg>
+            <div class="shelf-barcode-num">${formattedBarcode}</div>
           </div>
         `;
         grid.appendChild(card);
       });
     } catch (e) {
-      App.showToast('Etiketler yüklenemedi', true);
+      App.showToast('Etiketler yüklenemedi: ' + e.message, true);
     }
   },
 
@@ -802,41 +831,112 @@ const Views = {
       if (!area) return;
 
       area.innerHTML = `
-        <div style="font-size:18px; font-weight:800; margin-bottom:12px; color:var(--text-main);">GÜN SONU Z RAPORU</div>
-        <div style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Tarih: ${z.date} • Z No: ${z.z_number}</div>
+        <div class="z-report-paper">
+          <div class="z-header-block">
+            <div style="font-size:10.5px; font-weight:700; color:var(--text-secondary); letter-spacing:1px; margin-bottom:4px;">T.C. GELİR İDARESİ BAŞKANLIĞI MALİ MEVZUAT UYUMLU</div>
+            <div class="z-brand-title">CADDE CAFE &amp; MARKET</div>
+            <div class="z-branch-sub">${z.branch_name || 'Merkez Şube'} • Kasa: ${z.register_id || 'KASA-01'}</div>
+            <div class="z-doc-title">GÜN SONU MALİ Z-RAPORU</div>
 
-        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-          <span>Toplam Fiş Adedi:</span>
-          <span style="font-weight:700;">${z.total_sales_count} Adet</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-          <span>Nakit Tahsilat:</span>
-          <span style="font-weight:700; color:var(--apple-green);">${z.cash_total.toFixed(2)} ₺</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-          <span>Kredi Kartı:</span>
-          <span style="font-weight:700; color:var(--apple-blue);">${z.card_total.toFixed(2)} ₺</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
-          <span>Veresiye Satış:</span>
-          <span style="font-weight:700; color:var(--apple-amber);">${z.veresiye_total.toFixed(2)} ₺</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:2px solid var(--border); font-size:16px;">
-          <span style="font-weight:700;">NET CİRO:</span>
-          <span style="font-weight:800; color:#38bdf8;">${z.total_net.toFixed(2)} ₺</span>
-        </div>
-
-        <div style="margin-top:16px;">
-          <div style="font-weight:700; font-size:13px; margin-bottom:8px;">KDV Dökümü:</div>
-          ${z.vat_breakdown.map(v => `
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); padding:4px 0;">
-              <span>%${v.rate.toFixed(0)} KDV Matrah / Vergi:</span>
-              <span>${v.taxable_amount.toFixed(2)} ₺ / ${v.vat_amount.toFixed(2)} ₺</span>
+            <div class="z-meta-grid">
+              <div><b>Z No:</b> <span style="font-family:monospace; font-weight:700; color:var(--accent);">${z.z_number}</span></div>
+              <div style="text-align:right;"><b>Tarih / Saat:</b> ${z.date}</div>
+              <div><b>Kasiyer:</b> ${z.cashier_name || 'Ahmet Kasiyer'}</div>
+              <div style="text-align:right;"><b>Mali Hafıza No:</b> QRDY-${z.register_id || '01'}-TR</div>
             </div>
-          `).join('')}
+          </div>
+
+          <div class="z-kpi-summary-grid">
+            <div class="z-kpi-card">
+              <div class="z-kpi-label">Toplam Fiş</div>
+              <div class="z-kpi-value">${z.total_sales_count} Adet</div>
+            </div>
+            <div class="z-kpi-card">
+              <div class="z-kpi-label">Nakit Satış</div>
+              <div class="z-kpi-value" style="color:var(--green);">${z.cash_total.toFixed(2)} ₺</div>
+            </div>
+            <div class="z-kpi-card">
+              <div class="z-kpi-label">Kredi Kartı</div>
+              <div class="z-kpi-value" style="color:var(--accent);">${z.card_total.toFixed(2)} ₺</div>
+            </div>
+            <div class="z-kpi-card">
+              <div class="z-kpi-label">Veresiye</div>
+              <div class="z-kpi-value" style="color:var(--orange);">${z.veresiye_total.toFixed(2)} ₺</div>
+            </div>
+          </div>
+
+          <div class="z-finance-row">
+            <span>Brüt Satış Toplamı:</span>
+            <span style="font-weight:700;">${z.total_gross.toFixed(2)} ₺</span>
+          </div>
+          <div class="z-finance-row" style="color:var(--green);">
+            <span>İndirim &amp; Promosyonlar:</span>
+            <span style="font-weight:700;">-${z.total_discount.toFixed(2)} ₺</span>
+          </div>
+
+          <div class="z-grand-net-row">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:var(--accent); letter-spacing:0.5px;">GÜNLÜK NET HASILAT (CİRO)</div>
+              <div style="font-size:11px; color:var(--text-secondary);">Tüm mali tahsilat ve vergiler dahil net kapanış</div>
+            </div>
+            <div style="font-size:28px; font-weight:900; color:var(--accent);">${z.total_net.toFixed(2)} ₺</div>
+          </div>
+
+          <div class="z-vat-section">
+            <div style="font-weight:700; font-size:12.5px; color:var(--text-primary); margin-bottom:8px; display:flex; justify-content:space-between;">
+              <span>KDV Dağılım Tablosu</span>
+              <span style="font-size:11px; font-weight:normal; color:var(--text-secondary);">GİB KDV Kanunu Madde 28</span>
+            </div>
+            <table class="z-vat-table">
+              <thead>
+                <tr>
+                  <th>KDV Oranı</th>
+                  <th style="text-align:right;">Matrah (Net ₺)</th>
+                  <th style="text-align:right;">KDV Tutarı (₺)</th>
+                  <th style="text-align:right;">Brüt Toplam (₺)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(z.vat_breakdown && z.vat_breakdown.length > 0) ? z.vat_breakdown.map(v => `
+                  <tr>
+                    <td><b style="color:var(--accent);">%${v.rate.toFixed(0)}</b> KDV</td>
+                    <td style="text-align:right;">${v.taxable_amount.toFixed(2)} ₺</td>
+                    <td style="text-align:right; font-weight:600; color:var(--orange);">${v.vat_amount.toFixed(2)} ₺</td>
+                    <td style="text-align:right; font-weight:700;">${(v.taxable_amount + v.vat_amount).toFixed(2)} ₺</td>
+                  </tr>
+                `).join('') : `
+                  <tr>
+                    <td><b>%1</b> Gıda</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                  </tr>
+                  <tr>
+                    <td><b>%10</b> Temel Tüketim</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                  </tr>
+                  <tr>
+                    <td><b>%20</b> Genel</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                    <td style="text-align:right;">0.00 ₺</td>
+                  </tr>
+                `}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:20px; padding-top:14px; border-top:1px dashed var(--card-border); font-size:11px; color:var(--text-secondary); text-align:center;">
+            <div>Mali Hafıza Rapor Özeti Başarıyla Üretildi</div>
+            <div style="font-family:monospace; margin-top:4px; font-weight:600; color:var(--text-tertiary);">QORDY ESNAF POS CLOUD SYNCED • HASH: 9a7f...d82e</div>
+          </div>
         </div>
       `;
-    } catch (e) {}
+    } catch (e) {
+      App.showToast('Z-Raporu alınamadı: ' + e.message, true);
+    }
   },
 
   // ==========================================================

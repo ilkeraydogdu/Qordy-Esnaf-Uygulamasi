@@ -437,13 +437,19 @@ const App = {
     };
   },
 
+  toastTimer: null,
   showToast(msg, isError = false) {
     const t = document.getElementById('globalToast');
     if (!t) return;
-    t.innerText = msg;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    t.innerHTML = `<span style="margin-right:8px; font-size:15px; flex-shrink:0;">${isError ? '⚠️' : '✅'}</span><span>${msg}</span>`;
     t.style.borderLeftColor = isError ? 'var(--apple-red)' : 'var(--apple-green)';
-    t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 3000);
+    t.style.display = 'inline-flex';
+    t.style.alignItems = 'center';
+    this.toastTimer = setTimeout(() => {
+      t.style.display = 'none';
+      this.toastTimer = null;
+    }, 3200);
   },
 
   initTheme() {

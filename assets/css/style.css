@@ -32,6 +32,15 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-pill: 9999px;
+
+  /* Aliases & View Compatibility */
+  --text-muted: #86868b;
+  --text-main: #1d1d1f;
+  --border: rgba(0, 0, 0, 0.08);
+  --apple-blue: #0071e3;
+  --apple-green: #34c759;
+  --apple-amber: #ff9500;
+  --apple-red: #ff3b30;
 }
 
 body.dark-theme {
@@ -62,6 +71,15 @@ body.dark-theme {
   --card-border: rgba(255, 255, 255, 0.08);
   --shadow-ambient: 0 4px 20px rgba(0, 0, 0, 0.4);
   --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.7);
+
+  /* Aliases & View Compatibility (Dark) */
+  --text-muted: #98989d;
+  --text-main: #f5f5f7;
+  --border: rgba(255, 255, 255, 0.08);
+  --apple-blue: #2997ff;
+  --apple-green: #30d158;
+  --apple-amber: #ffd60a;
+  --apple-red: #ff453a;
 }
 
 * {
@@ -104,33 +122,49 @@ body {
   margin-bottom: 8px;
 }
 
-.brand-header {
+.brand-header,
+.sidebar-brand-card {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 4px 14px 4px;
   border-bottom: 1px solid var(--sidebar-border);
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
+.brand-logo-wrap,
 .tenant-logo-wrap {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  max-width: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-avatar,
+.tenant-logo-img {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: block;
+  background: var(--bg-card);
   flex-shrink: 0;
 }
 
-.tenant-logo-img {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  object-fit: cover;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  display: block;
-  background: var(--bg-card);
-}
-
+body.dark-theme .brand-avatar,
 body.dark-theme .tenant-logo-img {
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
@@ -141,6 +175,41 @@ body.dark-theme .tenant-logo-img {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.brand-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tenant-code-badge {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 10px;
 }
 
 .brand-meta h1 {
@@ -1171,28 +1240,36 @@ body.dark-theme .product-tile:hover, body.dark-theme .pos-tile:hover {
 }
 
 /* Toast */
+/* Toast - Positioned at Bottom-Right so it NEVER blocks headers or buttons */
 .toast-pill {
   position: fixed;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 24px;
+  right: 24px;
+  top: auto;
+  left: auto;
+  transform: none;
   background: var(--bg-card);
   color: var(--text-primary);
   border: 1px solid var(--card-border);
   border-left: 4px solid var(--accent);
-  padding: 10px 20px;
-  border-radius: var(--radius-pill);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 600;
-  box-shadow: var(--shadow-modal);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   display: none;
-  z-index: 2000;
-  animation: toastSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 99999;
+  animation: toastSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  max-width: 380px;
+  line-height: 1.4;
 }
 
-@keyframes toastSlide {
-  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+@keyframes toastSlideUp {
+  from { transform: translateY(24px) scale(0.96); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
 /* ==========================================================================
@@ -1525,4 +1602,256 @@ body.dark-theme .product-tile:hover, body.dark-theme .pos-tile:hover {
 
 .auth-text-link:hover {
   opacity: 0.8;
+}
+
+/* ==========================================================================
+   RAF & FİYAT ETİKETİ STİLLERİ (Bakanlık Fiyat Etiketi Standardı)
+   ========================================================================== */
+
+.shelf-label-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 190px;
+  box-shadow: var(--shadow-ambient);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.shelf-label-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+body.dark-theme .shelf-label-card {
+  background: var(--bg-subtle);
+}
+
+.shelf-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.shelf-badge-origin {
+  background: #e11d48;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2.5px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.shelf-prod-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  margin-top: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.shelf-price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 12px 0 10px 0;
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--card-border);
+}
+
+body.dark-theme .shelf-price-row {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.shelf-price-main {
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -1px;
+}
+
+.shelf-price-unit {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.shelf-barcode-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.shelf-barcode-bars {
+  font-family: 'Libre Barcode 128', 'Courier New', monospace;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--text-primary);
+  line-height: 1;
+  user-select: none;
+}
+
+.shelf-barcode-num {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   MALİ Z-RAPORU & GÜN SONU FİŞ DİZAYNI
+   ========================================================================== */
+
+.z-report-paper {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-ambient);
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+body.dark-theme .z-report-paper {
+  background: var(--bg-card);
+}
+
+.z-header-block {
+  text-align: center;
+  border-bottom: 2px dashed var(--card-border);
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.z-brand-title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+}
+
+.z-branch-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.z-doc-title {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-top: 10px;
+}
+
+.z-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 10px;
+  text-align: left;
+}
+
+.z-kpi-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.z-kpi-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.z-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.z-kpi-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.z-finance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 13.5px;
+}
+
+.z-grand-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-md);
+  margin: 16px 0;
+}
+
+.z-vat-section {
+  margin-top: 16px;
+  border-top: 2px dashed var(--card-border);
+  padding-top: 14px;
+}
+
+.z-vat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.z-vat-table th {
+  text-align: left;
+  padding: 6px 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.z-vat-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+body.dark-theme .z-vat-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
