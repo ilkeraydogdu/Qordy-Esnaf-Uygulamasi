@@ -11,10 +11,17 @@ use std::sync::Arc;
 
 pub async fn handle_get_active_shift(State(state): State<Arc<AppState>>) -> Json<serde_json::Value> {
     let active = state.db.get_active_shift();
+    let expected = if let Some(ref s) = active {
+        state.db.calculate_expected_cash(&s.id)
+    } else {
+        0.0
+    };
     Json(serde_json::json!({
         "success": true,
         "is_open": active.is_some(),
-        "shift": active
+        "shift": active,
+        "active_shift": active,
+        "expected_cash": expected
     }))
 }
 

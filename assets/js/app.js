@@ -10,6 +10,7 @@ const App = {
     Views.loadProducts();
     Views.loadCustomers();
     this.loadParkedCount();
+    this.switchMainScreen('pos');
 
     setInterval(() => this.fetchStatus(), 3000);
 

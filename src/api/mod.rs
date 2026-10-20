@@ -119,6 +119,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/api/pos/transfers/:id/receive", post(transfers::handle_receive_transfer))
         // 4. Kasa & Vardiya Yönetimi (Açılış, Kapanış, X-Raporu)
         .route("/api/pos/registers/shift/active", get(registers::handle_get_active_shift))
+        .route("/api/pos/registers/shift/status", get(registers::handle_get_active_shift))
         .route("/api/pos/registers/shift/open", post(registers::handle_open_shift))
         .route("/api/pos/registers/shift/close", post(registers::handle_close_shift))
         .route("/api/pos/registers/x-report", get(registers::handle_x_report))

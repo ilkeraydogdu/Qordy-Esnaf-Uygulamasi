@@ -20,7 +20,8 @@ pub fn get_customer_css() -> &'static str {
 }
 
 pub fn get_static_asset(path: &str) -> Option<(&'static str, &'static str)> {
-    match path {
+    let clean_path = path.split('?').next().unwrap_or(path);
+    match clean_path {
         "/assets/css/style.css" => Some((include_str!("../assets/css/style.css"), "text/css; charset=utf-8")),
         "/assets/css/customer.css" => Some((include_str!("../assets/css/customer.css"), "text/css; charset=utf-8")),
         "/assets/js/api.js" => Some((include_str!("../assets/js/api.js"), "application/javascript; charset=utf-8")),

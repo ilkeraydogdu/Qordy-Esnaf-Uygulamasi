@@ -3,8 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QORDY Esnaf POS - Çevrimdışı & Online Perakende Satış</title>
-  <link rel="stylesheet" href="/assets/css/style.css" />
+  <link rel="stylesheet" href="/assets/css/style.css?v=20261020_2" />
+  <style>
+    /* Critical screen layout guarantee */
+    .screen-view {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      display: none !important;
+      overflow: hidden !important;
+    }
+    .screen-view.active {
+      display: flex !important;
+    }
+    .screen-view.active.pos-layout {
+      display: grid !important;
+      grid-template-columns: 460px 1fr !important;
+    }
+    .screen-view.active.stock-layout {
+      display: grid !important;
+      grid-template-columns: 360px 1fr !important;
+    }
+  </style>
 </head>
 <body>
 
@@ -1064,10 +1086,10 @@
   <div class="toast-pill" id="globalToast"></div>
 
   <!-- Modular Scripts -->
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/cart.js"></script>
-  <script src="/assets/js/terminal.js"></script>
-  <script src="/assets/js/views.js"></script>
-  <script src="/assets/js/app.js"></script>
+  <script src="/assets/js/api.js?v=20261020_2"></script>
+  <script src="/assets/js/cart.js?v=20261020_2"></script>
+  <script src="/assets/js/terminal.js?v=20261020_2"></script>
+  <script src="/assets/js/views.js?v=20261020_2"></script>
+  <script src="/assets/js/app.js?v=20261020_2"></script>
 </body>
 </html>

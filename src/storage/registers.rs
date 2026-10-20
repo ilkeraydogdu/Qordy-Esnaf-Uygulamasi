@@ -211,4 +211,42 @@ impl DatabaseManager {
             Err(_) => Vec::new(),
         }
     }
+
+    /// Aktif vardiyadaki beklenen kasa nakdini hesapla
+    pub fn calculate_expected_cash(&self, shift_id: &str) -> f64 {
+        let conn = self.conn.lock();
+        let query_res: rusqlite::Result<(String, f64)> = conn.query_row(
+            "SELECT opened_at, opening_cash FROM register_shifts WHERE id = ?1",
+            params![shift_id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        );
+
+        match query_res {
+            Ok((opened_at, opening_cash)) => {
+                let cash_sales: f64 = conn
+                    .query_row(
+                        "SELECT COALESCE(SUM(grand_total), 0.0) FROM sales WHERE payment_method = 'CASH' AND created_at >= ?1",
+                        params![opened_at],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0.0);
+                let cash_in: f64 = conn
+                    .query_row(
+                        "SELECT COALESCE(SUM(amount), 0.0) FROM cash_movements WHERE movement_type = 'IN' AND reason NOT LIKE '%FLOAT%' AND created_at >= ?1",
+                        params![opened_at],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0.0);
+                let cash_out: f64 = conn
+                    .query_row(
+                        "SELECT COALESCE(SUM(amount), 0.0) FROM cash_movements WHERE movement_type = 'OUT' AND created_at >= ?1",
+                        params![opened_at],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0.0);
+                opening_cash + cash_sales + cash_in - cash_out
+            }
+            Err(_) => 0.0,
+        }
+    }
 }
