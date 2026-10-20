@@ -40,23 +40,22 @@ impl DatabaseManager {
         };
 
         if list.is_empty() {
-            // Varsayılan şubeyi ekle
             list.push(Branch {
                 id: self.config.branch_id.clone(),
                 tenant_id: self.config.tenant_id.clone(),
                 name: self.config.branch_name.clone(),
                 code: Some("MRK".to_string()),
-                address: Some("Merkez Cadde No:42 Kadıköy".to_string()),
-                phone: Some("0216 345 67 89".to_string()),
+                address: Some("Ritim Sokağı, Mimar Sinan Mahallesi, Sultanbeyli".to_string()),
+                phone: Some("905510162050".to_string()),
                 is_active: true,
             });
             list.push(Branch {
                 id: "BRANCH-02".to_string(),
                 tenant_id: self.config.tenant_id.clone(),
-                name: "Moda Sahil Şubesi".to_string(),
-                code: Some("MODA".to_string()),
-                address: Some("Moda Cad. No:18 Kadıköy".to_string()),
-                phone: Some("0216 418 22 33".to_string()),
+                name: "Sultanbeyli Çarşı Şubesi".to_string(),
+                code: Some("SUL-2".to_string()),
+                address: Some("Mimar Sinan Cad. No:18 Sultanbeyli".to_string()),
+                phone: Some("905510162050".to_string()),
                 is_active: true,
             });
             list.push(Branch {

@@ -23,12 +23,16 @@ impl DatabaseManager {
             now.timestamp_subsec_micros()
         );
 
-        let tenant_id = self.config.tenant_id.clone();
+        let live_tenant: Option<String> = tx.query_row("SELECT value FROM app_config WHERE key = 'tenant_id'", [], |r| r.get(0)).ok();
+        let live_branch: Option<String> = tx.query_row("SELECT value FROM app_config WHERE key = 'branch_name'", [], |r| r.get(0)).ok();
+        let live_cashier: Option<String> = tx.query_row("SELECT value FROM app_config WHERE key = 'cashier_name'", [], |r| r.get(0)).ok();
+
+        let tenant_id = live_tenant.unwrap_or_else(|| self.config.tenant_id.clone());
         let branch_id = self.config.branch_id.clone();
-        let branch_name = self.config.branch_name.clone();
+        let branch_name = live_branch.unwrap_or_else(|| self.config.branch_name.clone());
         let register_id = self.config.register_id.clone();
         let cashier_id = self.config.cashier_id.clone();
-        let cashier_name = self.config.cashier_name.clone();
+        let cashier_name = live_cashier.unwrap_or_else(|| self.config.cashier_name.clone());
 
         let mut subtotal = 0.0;
         let mut vat_total = 0.0;

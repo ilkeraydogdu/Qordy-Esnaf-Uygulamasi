@@ -160,6 +160,7 @@ impl DatabaseManager {
     pub fn get_x_report(&self) -> ZReport {
         let mut report = self.generate_z_report().unwrap_or_else(|_| ZReport {
             z_number: format!("X-{}", Local::now().format("%Y%m%d%H%M")),
+            business_name: self.config.business_name.clone(),
             branch_name: self.config.branch_name.clone(),
             register_id: self.config.register_id.clone(),
             cashier_name: self.config.cashier_name.clone(),

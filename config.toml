@@ -9,25 +9,25 @@ cloud_url = "https://qordy.com"
 api_key = "42ac390b9f93aa624d7ed72b6ca603e408a9de3d8f859218c157019db3ff6700"
 
 # Tenant identifier (REQUIRED)
-tenant_id = "CUST_69653cfccb839"
+tenant_id = "CUST_6aca07fe3e290"
 
 # Register / cash register identifier
 register_id = "KASA-01"
 
 # Cashier display name
-cashier_name = "Ahmet Kasiyer"
+cashier_name = "İlker Aydoğdu"
 
 # Cashier user ID
-cashier_id = "USR_01"
+cashier_id = "u_a042e0110eed1_1791625214"
 
 # Branch identifier
 branch_id = "BR_01"
 
 # Branch display name
-branch_name = "Kadıköy Çarşı Şubesi"
+branch_name = "KMK Market Sultanbeyli"
 
 # Business display name
-business_name = "QORDY Cadde Esnaf"
+business_name = "KMK Market"
 
 # HTTP server port
 port = 8090

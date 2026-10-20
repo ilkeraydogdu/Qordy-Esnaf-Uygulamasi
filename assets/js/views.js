@@ -854,14 +854,14 @@ const Views = {
         <div class="z-report-paper">
           <div class="z-header-block">
             <div style="font-size:10.5px; font-weight:700; color:var(--text-secondary); letter-spacing:1px; margin-bottom:4px;">T.C. GELİR İDARESİ BAŞKANLIĞI MALİ MEVZUAT UYUMLU</div>
-            <div class="z-brand-title">${(z.business_name || z.store_name || 'QORDY CADDE ESNAF').toUpperCase()}</div>
-            <div class="z-branch-sub">${z.branch_name || 'Kadıköy Çarşı Şubesi'} • Kasa: ${z.register_id || 'KASA-01'}</div>
+            <div class="z-brand-title">${(z.business_name || z.store_name || 'KMK MARKET').toUpperCase()}</div>
+            <div class="z-branch-sub">${z.branch_name || 'KMK Market Sultanbeyli'} • Kasa: ${z.register_id || 'KASA-01'}</div>
             <div class="z-doc-title">GÜN SONU MALİ Z-RAPORU</div>
 
             <div class="z-meta-grid">
               <div><b>Z No:</b> <span style="font-family:monospace; font-weight:700; color:var(--accent);">${z.z_number}</span></div>
               <div style="text-align:right;"><b>Tarih / Saat:</b> ${z.date}</div>
-              <div><b>Kasiyer:</b> ${z.cashier_name || 'Ahmet Kasiyer'}</div>
+              <div><b>Kasiyer:</b> ${z.cashier_name || 'İlker Aydoğdu'}</div>
               <div style="text-align:right;"><b>Mali Hafıza No:</b> QRDY-${z.register_id || '01'}-TR</div>
             </div>
           </div>
@@ -1701,7 +1701,7 @@ const Views = {
       const area = document.getElementById('xReportReceiptArea');
       if (area) {
         area.innerHTML = `
-          <div style="text-align:center; font-weight:800; font-size:14px; margin-bottom:4px;">QORDY PERAKENDE POS</div>
+          <div style="text-align:center; font-weight:800; font-size:14px; margin-bottom:4px;">KMK MARKET</div>
           <div style="text-align:center; font-size:11px; margin-bottom:12px;">GÜN İÇİ X-RAPORU (ARA KASA)</div>
           <div>Tarih / Saat : ${new Date(x.report_time).toLocaleString('tr-TR')}</div>
           <div>Kasa No      : ${x.register_id}</div>

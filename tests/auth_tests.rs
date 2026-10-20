@@ -51,11 +51,11 @@ mod auth_tests {
         let db = DatabaseManager::new(temp_file.path()).expect("DB init failed");
 
         // Esnaf Mağaza Sahibi şifre ile ilk aktivasyon/giriş
-        let login = db.login_with_password("esnaf@qordy.com", "esnaf123", true).expect("Login failed");
+        let login = db.login_with_password("aydilker123@gmail.com", "ilkN.2801", true).expect("Login failed");
         assert!(login.success);
         let user = login.user.unwrap();
         assert_eq!(user.role, "MANAGER");
-        assert_eq!(user.name, "Esnaf Mağaza Sahibi");
+        assert_eq!(user.name, "İlker Aydoğdu");
 
         let token = login.token.unwrap();
 

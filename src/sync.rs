@@ -254,10 +254,10 @@ impl SyncEngine {
     pub async fn pull_catalog_updates(&self) {
         if let Some(token) = self.db.get_app_config("cloud_token") {
             let client = crate::cloud::QordyCloudClient::default();
-            // Sayfa 1 (ilk 100 ürün) delta kontrolü
             if let Ok(products) = client.fetch_all_retail_products(&token).await {
                 if !products.is_empty() {
-                    info!("Canlı Qordy Bulut'tan {} ürün başarıyla senkronize edildi.", products.len());
+                    let _ = self.db.sync_cloud_catalog(&products);
+                    info!("Canlı Qordy Bulut'tan {} ürün başarıyla senkronize edildi ve yerel veritabanı güncellendi.", products.len());
                 }
             }
         }

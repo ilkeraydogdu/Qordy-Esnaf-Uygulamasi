@@ -269,4 +269,82 @@ impl DatabaseManager {
             synced_at: now,
         })
     }
+
+    /// Buluttan çekilen ürün kataloğunu yerel veritabanında güncelle (Delta Upsert)
+    pub fn sync_cloud_catalog(&self, products: &[crate::cloud::CloudProductItem]) -> Result<usize> {
+        if products.is_empty() {
+            return Ok(0);
+        }
+
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction()?;
+        let now = Local::now().to_rfc3339();
+
+        let live_tenant: Option<String> = tx
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'tenant_id'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+        let tenant_id = live_tenant.unwrap_or_else(|| "CUST_6aca07fe3e290".to_string());
+
+        let mut updated = 0;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO products (id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
+                 ON CONFLICT(id) DO UPDATE SET
+                    name = excluded.name,
+                    barcode = excluded.barcode,
+                    category = excluded.category,
+                    price = excluded.price,
+                    vat_rate = excluded.vat_rate,
+                    stock_qty = excluded.stock_qty,
+                    unit = excluded.unit,
+                    updated_at = excluded.updated_at",
+            )?;
+
+            for p in products {
+                let pid = if p.id.is_empty() {
+                    continue;
+                } else {
+                    p.id.clone()
+                };
+
+                let barcode = match &p.barcode {
+                    Some(b) if !b.trim().is_empty() => b.trim().to_string(),
+                    _ => format!("KOD_{}", &pid[pid.len().saturating_sub(8)..]),
+                };
+
+                let category = map_category_id_to_turkish(p.category_id.as_deref());
+                let price = json_val_to_f64(p.price.as_ref(), 0.0);
+                let vat_rate = json_val_to_f64(p.vat_rate.as_ref(), 10.0);
+                let raw_stock = json_val_to_f64(p.stock_qty.as_ref(), 0.0);
+                let stock_qty = if raw_stock > 0.0 { raw_stock } else { 100.0 };
+                let unit = p.unit.as_deref().unwrap_or("ADET").to_lowercase();
+                let is_weighed = if json_val_to_bool(p.is_weighable.as_ref()) { 1 } else { 0 };
+
+                stmt.execute(params![
+                    pid,
+                    tenant_id,
+                    barcode,
+                    p.name,
+                    category,
+                    price,
+                    vat_rate,
+                    stock_qty,
+                    unit,
+                    is_weighed,
+                    0.0,
+                    Option::<i32>::None,
+                    now
+                ])?;
+                updated += 1;
+            }
+        }
+
+        tx.commit()?;
+        Ok(updated)
+    }
 }

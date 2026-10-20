@@ -22,12 +22,10 @@ pub mod waste;
 use crate::config::AppConfig;
 use crate::models::{CartItem, Customer, LedgerEntry, Product, Sale};
 use anyhow::Result;
-use chrono::Local;
 use parking_lot::Mutex;
 use rusqlite::{params, Connection, Row};
 use std::path::Path;
 use std::sync::Arc;
-use tracing::info;
 
 // ---------------------------------------------------------------------------
 // Shared row-mapping helpers — eliminates duplicated field-by-field mapping
@@ -566,7 +564,8 @@ impl DatabaseManager {
             return Ok(());
         }
 
-        info!("Lokal SQLite veritabanı ilk kez oluşturuldu, örnek esnaf ürünleri ve cariler yükleniyor...");
+        let now = chrono::Local::now().to_rfc3339();
+        let tenant_id = "CUST_6aca07fe3e290";
 
         let sample_products = vec![
             ("PRD-001", "8690504018087", "Somun Ekmek (200g)", "Temel Gıda", 10.0, 1.0, 150.0, "adet", 0, 0.0, Some(1)),
@@ -583,11 +582,9 @@ impl DatabaseManager {
             ("PRD-012", "8690504018162", "Ülker Çikolatalı Gofret", "Atıştırmalık", 12.0, 10.0, 120.0, "adet", 0, 0.0, None),
         ];
 
-        let now = Local::now().to_rfc3339();
-        let tenant_id = &self.config.tenant_id;
         for (id, barcode, name, cat, price, vat, stock, unit, weighed, tare, quick) in sample_products {
             conn.execute(
-                "INSERT INTO products (id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at)
+                "INSERT OR IGNORE INTO products (id, tenant_id, barcode, name, category, price, vat_rate, stock_qty, unit, is_weighed, tare_grams, quick_order, updated_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
                 params![id, tenant_id, barcode, name, cat, price, vat, stock, unit, weighed, tare, quick, now],
             )?;
@@ -601,20 +598,24 @@ impl DatabaseManager {
 
         for (id, name, phone, balance, limit, note) in sample_customers {
             conn.execute(
-                "INSERT INTO customers (id, tenant_id, name, phone, balance, credit_limit, note, updated_at)
+                "INSERT OR IGNORE INTO customers (id, tenant_id, name, phone, balance, credit_limit, note, updated_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
                 params![id, tenant_id, name, phone, balance, limit, note, now],
             )?;
         }
 
         let default_configs = vec![
-            ("tenant_id", self.config.tenant_id.as_str()),
-            ("business_name", self.config.business_name.as_str()),
-            ("branch_id", self.config.branch_id.as_str()),
-            ("branch_name", self.config.branch_name.as_str()),
-            ("register_id", self.config.register_id.as_str()),
-            ("cashier_name", self.config.cashier_name.as_str()),
-            ("cloud_api_url", self.config.cloud_url.as_str()),
+            ("tenant_id", "CUST_6aca07fe3e290"),
+            ("business_name", "KMK Market"),
+            ("branch_id", "BR_01"),
+            ("branch_name", "KMK Market Sultanbeyli"),
+            ("business_address", "Ritim Sokağı, Mimar Sinan Mahallesi, Sultanbeyli"),
+            ("business_phone", "905510162050"),
+            ("register_id", "KASA-01"),
+            ("cashier_name", "İlker Aydoğdu"),
+            ("cloud_api_url", "https://qordy.com/api/mobile"),
+            ("cloud_user_email", "aydilker123@gmail.com"),
+            ("cloud_user_name", "İlker Aydoğdu"),
             ("api_key", self.config.api_key.as_str()),
         ];
 

@@ -69,11 +69,36 @@ impl DatabaseManager {
 
         let vat_breakdown: Vec<VatSummary> = vat_rows.filter_map(|r| r.ok()).collect();
 
+        let live_business_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'business_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
+        let live_branch_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'branch_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
+        let live_cashier_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'cashier_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
         Ok(ZReport {
             z_number: format!("Z-{}", Local::now().format("%Y%m%d%H%M")),
-            branch_name: self.config.branch_name.clone(),
+            business_name: live_business_name.unwrap_or_else(|| self.config.business_name.clone()),
+            branch_name: live_branch_name.unwrap_or_else(|| self.config.branch_name.clone()),
             register_id: self.config.register_id.clone(),
-            cashier_name: self.config.cashier_name.clone(),
+            cashier_name: live_cashier_name.unwrap_or_else(|| self.config.cashier_name.clone()),
             date: Local::now().format("%d.%m.%Y %H:%M").to_string(),
             total_sales_count: total_count,
             total_gross,
@@ -131,6 +156,22 @@ impl DatabaseManager {
             )
             .ok();
 
+        let live_branch_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'branch_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
+        let live_cashier_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'cashier_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
         let local_ip = local_ip_address::local_ip()
             .map(|ip| ip.to_string())
             .unwrap_or_else(|_| "127.0.0.1".to_string());
@@ -140,9 +181,9 @@ impl DatabaseManager {
             tenant_id: live_tenant_id.unwrap_or_else(|| self.config.tenant_id.clone()),
             business_name: live_business_name.unwrap_or_else(|| self.config.business_name.clone()),
             branch_id: self.config.branch_id.clone(),
-            branch_name: self.config.branch_name.clone(),
+            branch_name: live_branch_name.unwrap_or_else(|| self.config.branch_name.clone()),
             register_id: self.config.register_id.clone(),
-            cashier_name: self.config.cashier_name.clone(),
+            cashier_name: live_cashier_name.unwrap_or_else(|| self.config.cashier_name.clone()),
             is_online,
             pending_sync_count: pending,
             today_sales_count: count,

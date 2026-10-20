@@ -118,6 +118,7 @@ pub struct CheckoutResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZReport {
     pub z_number: String,
+    pub business_name: String,
     pub branch_name: String,
     pub register_id: String,
     pub cashier_name: String,

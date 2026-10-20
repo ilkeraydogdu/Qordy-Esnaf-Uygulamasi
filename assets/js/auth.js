@@ -506,7 +506,7 @@ const Auth = {
 
         const username = emailInput ? emailInput.value.trim() : '';
         const password = passInput ? passInput.value : '';
-        const storeName = storeInput ? storeInput.value.trim() : 'QORDY Kadıköy Çarşı Esnafı';
+        const storeName = storeInput ? storeInput.value.trim() : 'KMK Market';
 
         if (!username || !password) {
             if (errEl) {

@@ -114,6 +114,23 @@ fn main() -> Result<()> {
         }
     });
 
+    let state_auto = app_state.clone();
+    rt.spawn(async move {
+        let count = state_auto.db.get_quick_products().len();
+        if count == 0 || state_auto.db.get_app_config("cloud_token").is_none() {
+            info!("🔄 Canlı Qordy Bulut'tan KMK Market gerçek verileri çekiliyor...");
+            let cloud = crate::cloud::QordyCloudClient::default();
+            if let Ok(bundle) = cloud.fetch_full_store_bundle("aydilker123@gmail.com", "ilkN.2801").await {
+                if let Ok(stats) = state_auto.db.import_cloud_bundle(&bundle) {
+                    info!(
+                        "✅ Canlı mağaza '{}' yüklendi: {} ürün, {} müşteri!",
+                        stats.business_name, stats.products_imported, stats.customers_imported
+                    );
+                }
+            }
+        }
+    });
+
     // 6. Masaüstü Penceresi ve Wry Webview Başlat
     info!("Yerel Masaüstü Arayüzü başlatılıyor (Tao + Wry)...");
     let event_loop = EventLoop::new();

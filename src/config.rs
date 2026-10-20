@@ -49,11 +49,11 @@ fn default_register_id() -> String {
 }
 
 fn default_cashier_name() -> String {
-    "Ahmet Kasiyer".to_string()
+    "İlker Aydoğdu".to_string()
 }
 
 fn default_cashier_id() -> String {
-    "USR_01".to_string()
+    "u_a042e0110eed1_1791625214".to_string()
 }
 
 fn default_branch_id() -> String {
@@ -61,11 +61,11 @@ fn default_branch_id() -> String {
 }
 
 fn default_branch_name() -> String {
-    "Kadıköy Çarşı Şubesi".to_string()
+    "KMK Market Sultanbeyli".to_string()
 }
 
 fn default_business_name() -> String {
-    "QORDY Cadde Esnaf".to_string()
+    "KMK Market".to_string()
 }
 
 fn default_port() -> u16 {
@@ -77,7 +77,7 @@ impl Default for AppConfig {
         Self {
             cloud_url: default_cloud_url(),
             api_key: String::new(),
-            tenant_id: String::new(),
+            tenant_id: "CUST_6aca07fe3e290".to_string(),
             register_id: default_register_id(),
             cashier_name: default_cashier_name(),
             cashier_id: default_cashier_id(),
