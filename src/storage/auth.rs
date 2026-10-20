@@ -31,12 +31,21 @@ impl DatabaseManager {
     /// Sistemdeki aktif kasiyer ve yöneticileri listeler (Giriş avatar seçimi için)
     pub fn list_active_users(&self) -> Result<Vec<User>> {
         let conn = self.conn.lock();
+        let live_tenant: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'tenant_id'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+        let tenant = live_tenant.unwrap_or_else(|| self.config.tenant_id.clone());
+
         let mut stmt = conn.prepare(
             "SELECT id, tenant_id, name, username, role, is_active, created_at
-             FROM users WHERE is_active = 1 ORDER BY role DESC, name ASC",
+             FROM users WHERE is_active = 1 AND tenant_id = ?1 ORDER BY role DESC, name ASC",
         )?;
 
-        let rows = stmt.query_map([], |row| {
+        let rows = stmt.query_map(params![tenant], |row| {
             Ok(User {
                 id: row.get(0)?,
                 tenant_id: row.get(1)?,
@@ -69,18 +78,26 @@ impl DatabaseManager {
         }
 
         let conn = self.conn.lock();
+        let live_tenant: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'tenant_id'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+        let tenant = live_tenant.unwrap_or_else(|| self.config.tenant_id.clone());
 
         // Aktif kullanıcıları çek ve constant-time karşılaştır
         let mut stmt = conn.prepare(
             "SELECT id, tenant_id, name, username, pin_hash, pin_salt, role, is_active, failed_attempts, locked_until, created_at
-             FROM users WHERE is_active = 1",
+             FROM users WHERE is_active = 1 AND tenant_id = ?1",
         )?;
 
         let now = Local::now().to_rfc3339();
 
         let mut matched_user: Option<(User, i32, Option<String>)> = None;
 
-        let rows = stmt.query_map([], |row| {
+        let rows = stmt.query_map(params![tenant], |row| {
             let user = User {
                 id: row.get(0)?,
                 tenant_id: row.get(1)?,

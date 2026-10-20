@@ -79,7 +79,35 @@ pub async fn handle_login(
     }
 
     if let (Some(u), Some(p)) = (payload.username, payload.password) {
-        return match state.db.login_with_password(&u, &p, remember) {
+        let clean_u = u.trim();
+        let clean_p = p.trim();
+
+        // 1. Önce yerel veritabanında doğrula
+        let local_attempt = state.db.login_with_password(clean_u, clean_p, remember);
+        if let Ok(ref resp) = local_attempt {
+            if resp.success {
+                return Json(resp.clone());
+            }
+        }
+
+        // 2. E-posta formatında ise veya yerelde henüz yoksa doğrudan Qordy Bulut'a bağlan
+        if clean_u.contains('@') {
+            let cloud = crate::cloud::QordyCloudClient::default();
+            if let Ok(bundle) = cloud.fetch_full_store_bundle(clean_u, clean_p).await {
+                if let Ok(_stats) = state.db.import_cloud_bundle(&bundle) {
+                    state.sync.trigger_sync();
+
+                    // Bulut aktarımı tamamlandıktan sonra yerel oturum aç
+                    if let Ok(resp) = state.db.login_with_password(clean_u, clean_p, remember) {
+                        if resp.success {
+                            return Json(resp);
+                        }
+                    }
+                }
+            }
+        }
+
+        return match local_attempt {
             Ok(resp) => Json(resp),
             Err(e) => Json(AuthResponse {
                 success: false,

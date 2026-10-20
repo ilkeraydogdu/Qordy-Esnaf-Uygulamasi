@@ -1,5 +1,6 @@
 mod api;
 mod barcode;
+mod cloud;
 mod config;
 mod escpos;
 mod models;

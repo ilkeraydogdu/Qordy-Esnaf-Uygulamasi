@@ -20,7 +20,7 @@ axum = { version = "0.7", features = ["ws"] }
 tower-http = { version = "0.5", features = ["cors"] }
 
 # Cloud REST API Sync Client
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots", "rustls-tls-webpki-roots"] }
 
 # Serialization & Models
 serde = { version = "1.0", features = ["derive"] }

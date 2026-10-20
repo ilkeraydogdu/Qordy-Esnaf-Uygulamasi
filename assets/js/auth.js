@@ -27,6 +27,17 @@ const Auth = {
     // 1. Modül Başlatma
     async init() {
         this.bindEvents();
+        try {
+            const cloudRes = await fetch('/api/cloud/status');
+            if (cloudRes.ok) {
+                const cloudData = await cloudRes.json();
+                if (cloudData.is_connected && cloudData.business_name) {
+                    this.setActivated(true, cloudData.business_name);
+                }
+            }
+        } catch (e) {
+            console.warn('Bulut durum kontrolü yapılamadı:', e);
+        }
         await this.loadUsers();
         await this.checkCurrentSession();
     },
@@ -46,7 +57,7 @@ const Auth = {
     },
 
     getStoreName() {
-        return localStorage.getItem(this.storeNameKey) || 'QORDY Kadıköy Çarşı Esnafı';
+        return localStorage.getItem(this.storeNameKey) || 'KMK Market';
     },
 
     getToken() {
@@ -514,7 +525,17 @@ const Auth = {
 
             const data = await res.json();
             if (data.success && data.token && data.user) {
-                this.setActivated(true, storeName);
+                // Buluttan gelen gerçek mağaza adını al
+                let finalStoreName = storeName;
+                try {
+                    const stRes = await fetch('/api/cloud/status');
+                    if (stRes.ok) {
+                        const stData = await stRes.json();
+                        if (stData.business_name) finalStoreName = stData.business_name;
+                    }
+                } catch(e) {}
+
+                this.setActivated(true, finalStoreName);
                 this.setToken(data.token);
                 this.currentSession = {
                     token: data.token,
@@ -526,12 +547,23 @@ const Auth = {
 
                 // Başlığı da mağaza adına göre güncelle
                 const headerTitle = document.querySelector('.brand-name');
-                if (headerTitle) headerTitle.textContent = storeName;
+                if (headerTitle) headerTitle.textContent = finalStoreName;
 
                 this.updateActiveUserDisplay(data.user.name, data.user.role);
                 this.applyRolePermissions(data.user.role);
                 this.hideLockScreen();
-                if (window.showToast) window.showToast(`Mağaza Aktivasyonu Başarılı! Hoş geldiniz.`, 'success');
+                await this.loadUsers();
+
+                if (window.App) {
+                    if (window.App.loadCatalog) window.App.loadCatalog();
+                    if (window.App.fetchStatus) window.App.fetchStatus();
+                }
+                if (window.Views) {
+                    if (window.Views.loadProducts) window.Views.loadProducts();
+                    if (window.Views.loadCustomers) window.Views.loadCustomers();
+                }
+
+                if (window.showToast) window.showToast(`'${finalStoreName}' Mağazası Başarıyla Aktive Edildi!`, 'success');
             } else {
                 if (errEl) {
                     errEl.textContent = data.error || 'Geçersiz e-posta veya şifre.';

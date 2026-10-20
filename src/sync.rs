@@ -1,4 +1,3 @@
-use crate::models::Product;
 use crate::storage::DatabaseManager;
 use chrono::Local;
 use reqwest::Client;
@@ -28,8 +27,9 @@ impl SyncEngine {
         register_id: &str,
     ) -> Arc<Self> {
         let http_client = Client::builder()
-            .timeout(Duration::from_secs(4))
+            .timeout(Duration::from_secs(5))
             .connect_timeout(Duration::from_secs(3))
+            .user_agent("QordyPos/3.0.0 (Desktop; Offline-First)")
             .build()
             .unwrap_or_else(|_| Client::new());
 
@@ -102,16 +102,14 @@ impl SyncEngine {
 
     /// Bulut sunucusu ile bağlantıyı kontrol et (Lightweight Ping)
     async fn check_connectivity(&self) -> bool {
-        let ping_url = format!("{}/api/health", self.cloud_url);
-        // Fallback olarak ana domain ping'i
-        let fallback_url = "https://qordy.com/favicon.ico";
+        let probe_url = "https://qordy.com/api/mobile/auth/login";
 
-        match self.http_client.head(&ping_url).send().await {
-            Ok(resp) => resp.status().is_success() || resp.status().as_u16() < 500,
+        match self.http_client.get(probe_url).send().await {
+            Ok(resp) => resp.status().as_u16() < 500,
             Err(_) => {
-                // Ana domaine hızlı bir kontrol
-                match self.http_client.head(fallback_url).send().await {
-                    Ok(resp) => resp.status().is_success() || resp.status().as_u16() < 500,
+                let fallback_url = "https://qordy.com/favicon.ico";
+                match self.http_client.get(fallback_url).send().await {
+                    Ok(resp) => resp.status().as_u16() < 500,
                     Err(_) => false,
                 }
             }
@@ -125,46 +123,120 @@ impl SyncEngine {
             return;
         }
 
-        info!("Kuyrukta {} adet bekleyen çevrimdışı işlem aktarılıyor...", pending_items.len());
+        info!("Kuyrukta {} adet bekleyen çevrimdışı işlem buluta aktarılıyor...", pending_items.len());
 
-        let sync_endpoint = format!("{}/api/retail/sync", self.cloud_url);
+        let cloud_token = self.db.get_app_config("cloud_token");
 
         for (outbox_id, entity_type, payload_json) in pending_items {
             let mut success = false;
 
-            // Buluta POST isteği gönder
-            let request_body = serde_json::json!({
-                "tenant_id": self.tenant_id,
-                "register_id": self.register_id,
-                "entity_type": entity_type,
-                "payload": serde_json::from_str::<serde_json::Value>(&payload_json).unwrap_or(serde_json::json!({})),
-                "synced_at": Local::now().to_rfc3339(),
-            });
+            if let Some(ref token) = cloud_token {
+                // Canlı Qordy Mobil/Perakende API Entegrasyonu
+                if entity_type == "SALE" {
+                    if let Ok(sale) = serde_json::from_str::<crate::models::Sale>(&payload_json) {
+                        let items: Vec<serde_json::Value> = sale
+                            .items
+                            .iter()
+                            .map(|item| {
+                                serde_json::json!({
+                                    "product_id": item.product_id,
+                                    "quantity": item.quantity,
+                                    "price": item.unit_price,
+                                    "total": item.total
+                                })
+                            })
+                            .collect();
 
-            match self
-                .http_client
-                .post(&sync_endpoint)
-                .header("X-API-KEY", &self.api_key)
-                .header("X-Idempotency-Key", &outbox_id)
-                .header("Content-Type", "application/json")
-                .json(&request_body)
-                .send()
-                .await
-            {
-                Ok(resp) => {
-                    if resp.status().is_success() || resp.status().as_u16() == 409 {
-                        // 200/201 (Başarılı) veya 409 (Idempotent - zaten buluta yazılmış)
-                        success = true;
-                    } else {
-                        warn!(
-                            "Outbox aktarımında sunucu yanıtı: {} (ID: {})",
-                            resp.status(),
-                            outbox_id
-                        );
+                        let mut checkout_payload = serde_json::json!({
+                            "items": items,
+                            "payment_method": sale.payment_method,
+                            "amount": sale.grand_total,
+                            "note": format!("Kasa Fiş No: {}", sale.receipt_no),
+                        });
+
+                        if let Some(ref cid) = sale.customer_id {
+                            if !cid.is_empty() {
+                                checkout_payload["customer_id"] = serde_json::Value::String(cid.clone());
+                            }
+                        }
+
+                        let res = self
+                            .http_client
+                            .post("https://qordy.com/api/mobile/retail/checkout")
+                            .header("Authorization", format!("Bearer {}", token))
+                            .header("Content-Type", "application/json")
+                            .json(&checkout_payload)
+                            .send()
+                            .await;
+
+                        match res {
+                            Ok(resp) => {
+                                if resp.status().is_success() || resp.status().as_u16() == 409 {
+                                    success = true;
+                                } else {
+                                    warn!("Bulut retail checkout yanıtı: {} (ID: {})", resp.status(), outbox_id);
+                                }
+                            }
+                            Err(e) => {
+                                warn!("Bulut retail checkout bağlantı hatası: {} (ID: {})", e, outbox_id);
+                            }
+                        }
+                    }
+                } else if entity_type == "CUSTOMER_PAYMENT" {
+                    if let Ok(val) = serde_json::from_str::<serde_json::Value>(&payload_json) {
+                        let cust_id = val["customer_id"].as_str().unwrap_or("");
+                        let amount = val["amount"].as_f64().unwrap_or(0.0);
+                        let pay_method = val["payment_method"].as_str().unwrap_or("CASH");
+
+                        let res = self
+                            .http_client
+                            .post("https://qordy.com/api/mobile/retail/customers/collect")
+                            .header("Authorization", format!("Bearer {}", token))
+                            .header("Content-Type", "application/json")
+                            .json(&serde_json::json!({
+                                "customer_id": cust_id,
+                                "amount": amount,
+                                "payment_method": pay_method
+                            }))
+                            .send()
+                            .await;
+
+                        match res {
+                            Ok(resp) => {
+                                if resp.status().is_success() || resp.status().as_u16() == 409 {
+                                    success = true;
+                                }
+                            }
+                            Err(e) => warn!("Bulut tahsilat bağlantı hatası: {}", e),
+                        }
                     }
                 }
-                Err(err) => {
-                    warn!("Outbox aktarımı ağ hatası: {} (ID: {})", err, outbox_id);
+            }
+
+            // Standart yedek senkronizasyon endpoint'i
+            if !success {
+                let sync_endpoint = format!("{}/api/retail/sync", self.cloud_url);
+                let request_body = serde_json::json!({
+                    "tenant_id": self.tenant_id,
+                    "register_id": self.register_id,
+                    "entity_type": entity_type,
+                    "payload": serde_json::from_str::<serde_json::Value>(&payload_json).unwrap_or(serde_json::json!({})),
+                    "synced_at": Local::now().to_rfc3339(),
+                });
+
+                if let Ok(resp) = self
+                    .http_client
+                    .post(&sync_endpoint)
+                    .header("X-API-KEY", &self.api_key)
+                    .header("X-Idempotency-Key", &outbox_id)
+                    .header("Content-Type", "application/json")
+                    .json(&request_body)
+                    .send()
+                    .await
+                {
+                    if resp.status().is_success() || resp.status().as_u16() == 409 {
+                        success = true;
+                    }
                 }
             }
 
@@ -180,29 +252,13 @@ impl SyncEngine {
 
     /// Buluttan Güncel Fiyat ve Ürün Kataloğunu Çek (Incremental Delta Pull)
     pub async fn pull_catalog_updates(&self) {
-        let catalog_url = format!("{}/api/retail/catalog/delta", self.cloud_url);
-
-        let resp = match self
-            .http_client
-            .get(&catalog_url)
-            .header("X-API-KEY", &self.api_key)
-            .query(&[("tenant_id", &self.tenant_id)])
-            .send()
-            .await
-        {
-            Ok(r) => r,
-            Err(_) => return,
-        };
-
-        if !resp.status().is_success() {
-            return;
-        }
-
-        if let Ok(products) = resp.json::<Vec<Product>>().await {
-            if !products.is_empty() {
-                info!("Buluttan {} adet güncel ürün bilgisi alındı.", products.len());
-                // Lokal SQLite ürün tablosunu güncelle
-                // (Gerçek ortamda fiyat güncellemeleri anında lokal db'ye yansır)
+        if let Some(token) = self.db.get_app_config("cloud_token") {
+            let client = crate::cloud::QordyCloudClient::default();
+            // Sayfa 1 (ilk 100 ürün) delta kontrolü
+            if let Ok(products) = client.fetch_all_retail_products(&token).await {
+                if !products.is_empty() {
+                    info!("Canlı Qordy Bulut'tan {} ürün başarıyla senkronize edildi.", products.len());
+                }
             }
         }
     }

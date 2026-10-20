@@ -6,6 +6,7 @@ pub mod campaigns;
 pub mod cash;
 pub mod catalog;
 pub mod cfd;
+pub mod cloud;
 pub mod customers;
 pub mod hardware;
 pub mod inventory;
@@ -58,6 +59,10 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/api/auth/logout", post(auth::handle_logout))
         .route("/api/auth/change-pin", post(auth::handle_change_pin))
         .route("/api/auth/register-cashier", post(auth::handle_register_cashier))
+        // Live Qordy Cloud Sync & Real Store Management
+        .route("/api/cloud/login", post(cloud::handle_cloud_login))
+        .route("/api/cloud/sync", post(cloud::handle_cloud_sync))
+        .route("/api/cloud/status", get(cloud::handle_cloud_status))
         // WebSocket Realtime Channel
         .route("/ws/pos", get(cfd::handle_ws_pos))
         // POS Core & Catalog

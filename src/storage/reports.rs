@@ -115,14 +115,30 @@ impl DatabaseManager {
             )
             .unwrap_or(0);
 
+        let live_business_name: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'business_name'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
+        let live_tenant_id: Option<String> = conn
+            .query_row(
+                "SELECT value FROM app_config WHERE key = 'tenant_id'",
+                [],
+                |r| r.get(0),
+            )
+            .ok();
+
         let local_ip = local_ip_address::local_ip()
             .map(|ip| ip.to_string())
             .unwrap_or_else(|_| "127.0.0.1".to_string());
 
         PosStatus {
             version: "3.0.0".to_string(),
-            tenant_id: self.config.tenant_id.clone(),
-            business_name: self.config.business_name.clone(),
+            tenant_id: live_tenant_id.unwrap_or_else(|| self.config.tenant_id.clone()),
+            business_name: live_business_name.unwrap_or_else(|| self.config.business_name.clone()),
             branch_id: self.config.branch_id.clone(),
             branch_name: self.config.branch_name.clone(),
             register_id: self.config.register_id.clone(),

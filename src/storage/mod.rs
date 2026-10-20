@@ -6,6 +6,7 @@ pub mod campaigns;
 pub mod cash;
 pub mod catalog;
 pub mod cfd;
+pub mod cloud_sync;
 pub mod customers;
 pub mod labels;
 pub mod outbox;
@@ -625,6 +626,11 @@ impl DatabaseManager {
         }
 
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn conn(&self) -> parking_lot::MutexGuard<'_, Connection> {
+        self.conn.lock()
     }
 
     #[allow(dead_code)]
