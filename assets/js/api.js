@@ -26,6 +26,16 @@ const Api = {
     return res.json();
   },
 
+  async put(url, data) {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: Api.getHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   async delete(url) {
     const res = await fetch(url, { method: 'DELETE', headers: Api.getHeaders() });
     if (!res.ok) throw new Error(await res.text());
@@ -40,6 +50,7 @@ const Api = {
   getQuickProducts: () => Api.get('/api/products/quick'),
   getProducts: () => Api.get('/api/products'),
   createProduct: (data) => Api.post('/api/products', data),
+  updateProduct: (id, data) => Api.put(`/api/products/${id}`, data),
   deleteProduct: (id) => Api.delete(`/api/products/${id}`),
   scanBarcode: (barcode) => Api.post('/api/barcode/scan', { barcode }),
 
@@ -56,6 +67,7 @@ const Api = {
   // Customers & Ledger
   getCustomers: () => Api.get('/api/customers'),
   createCustomer: (data) => Api.post('/api/customers', data),
+  getCustomerLedger: (id) => Api.get(`/api/customers/${id}/ledger`),
   recordPayment: (data) => Api.post('/api/customers/payment', data),
 
   // Stock Count
@@ -111,5 +123,9 @@ const Api = {
   getXReport: () => Api.get('/api/pos/registers/x-report'),
 
   // 4.13 Milyon Ulusal Barkod Kataloğu
-  searchNationalCatalog: (barcode) => Api.get(`/api/pos/national-catalog/${barcode}`)
+  searchNationalCatalog: (barcode) => Api.get(`/api/pos/national-catalog/${barcode}`),
+
+  // Donanım (ESC/POS Termal Fiş & Kasa Çekmecesi)
+  printReceipt: (receiptNo) => Api.post('/api/hardware/print', { receipt_no: receiptNo }),
+  kickDrawer: () => Api.post('/api/hardware/drawer', {})
 };

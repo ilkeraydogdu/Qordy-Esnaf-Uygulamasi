@@ -280,6 +280,14 @@
         </div>
       </div>
 
+      <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+        <input type="text" id="productsSearch" class="apple-input" placeholder="Barkod veya ürün adı ile ara..." oninput="Views.filterProducts()" style="max-width:320px;">
+        <select id="productsCategoryFilter" class="form-input" style="max-width:180px; padding:8px 12px;" onchange="Views.filterProducts()">
+          <option value="">Tüm Kategoriler</option>
+        </select>
+        <div id="productsCountBadge" style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-left:auto;"></div>
+      </div>
+
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -308,7 +316,7 @@
           Sayım Seansları
         </div>
         <button class="btn-apple" onclick="Views.openNewStockSessionModal()">+ Yeni Sayım Başlat</button>
-        <div style="flex:1; overflow-y:auto; border:1px solid var="card-border"; border-radius:var(--radius-sm); padding:6px;" id="stockSessionsList"></div>
+        <div style="flex:1; overflow-y:auto; border:1px solid var(--card-border); border-radius:var(--radius-sm); padding:6px;" id="stockSessionsList"></div>
       </div>
       <div class="apple-card" id="stockSessionDetail" style="display:flex; flex-direction:column; gap:14px; height:100%;">
         <div style="color:var(--text-secondary); text-align:center; padding:48px;">
@@ -335,6 +343,12 @@
           </button>
         </div>
       </div>
+
+      <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+        <input type="text" id="customersSearch" class="apple-input" placeholder="Müşteri adı veya telefon ile ara..." oninput="Views.filterCustomers()" style="max-width:320px;">
+        <div id="customersTotalDebtBadge" style="margin-left:auto; display:flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--apple-amber);"></div>
+      </div>
+
       <div class="table-container">
         <table class="data-table">
           <thead>
@@ -343,7 +357,7 @@
               <th>Telefon</th>
               <th>Mevcut Borç</th>
               <th>Veresiye Limiti</th>
-              <th>Son İşlem Tarihi</th>
+              <th>Not / Adres</th>
               <th style="text-align:right;">İşlem</th>
             </tr>
           </thead>
@@ -1450,6 +1464,100 @@
         <div style="text-align:center;">
           <button type="button" class="auth-text-link" id="btnBackToPinMode">Kasiyer PIN ile Girişe Dön</button>
         </div>
+      </div>
+  <!-- Müşteri Cari Ekstre Modalı -->
+  <div class="modal-overlay" id="customerLedgerModal">
+    <div class="modal-window" style="max-width:640px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span id="customerLedgerHeading">Müşteri Cari Hesap Ekstresi</span>
+      </div>
+      <div id="customerLedgerSummary" style="display:flex; justify-content:space-between; background:var(--bg-subtle); padding:10px 14px; border-radius:10px; margin-bottom:12px; font-size:13px; font-weight:700;"></div>
+      <div class="table-container" style="max-height:280px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>İşlem Türü</th>
+              <th>Tutar (₺)</th>
+              <th>Kalan Bakiye</th>
+              <th>Açıklama</th>
+            </tr>
+          </thead>
+          <tbody id="customerLedgerBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:14px;">
+        <button class="btn-secondary" onclick="closeModal('customerLedgerModal')">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ürün Düzenleme Modalı -->
+  <div class="modal-overlay" id="editProductModal">
+    <div class="modal-window" style="max-width:440px;">
+      <div class="modal-heading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        Ürün Bilgilerini Düzenle
+      </div>
+      <input type="hidden" id="epId" />
+      <div class="form-group">
+        <label>Barkod:</label>
+        <input type="text" id="epBarcode" class="form-input" readonly style="opacity:0.75;" />
+      </div>
+      <div class="form-group">
+        <label>Ürün Adı:</label>
+        <input type="text" id="epName" class="form-input" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kategori:</label>
+          <input type="text" id="epCategory" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Birim:</label>
+          <select id="epUnit" class="form-input">
+            <option value="adet">Adet</option>
+            <option value="kg">Kilogram (kg)</option>
+            <option value="lt">Litre (lt)</option>
+            <option value="paket">Paket</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Satış Fiyatı (₺):</label>
+          <input type="number" id="epPrice" class="form-input" step="0.05" />
+        </div>
+        <div class="form-group">
+          <label>KDV Oranı (%):</label>
+          <select id="epVat" class="form-input">
+            <option value="1">1%</option>
+            <option value="10">10%</option>
+            <option value="20">20%</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Mevcut Stok Miktarı:</label>
+        <input type="number" id="epStock" class="form-input" step="0.1" />
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="btn-secondary" style="flex:1;" onclick="closeModal('editProductModal')">Vazgeç</button>
+        <button class="btn-apple" style="flex:2;" onclick="Views.saveEditProduct()">Değişiklikleri Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evrensel Onay Modalı (Native Desktop Confirm) -->
+  <div class="modal-overlay" id="appConfirmModal" style="display:none; z-index:99999;">
+    <div class="modal-window" style="max-width:440px; text-align:center; padding:24px;">
+      <div id="confirmModalIcon" style="font-size:36px; margin-bottom:10px;">⚠️</div>
+      <div class="modal-heading" id="confirmModalTitle" style="font-size:18px; font-weight:700; margin-bottom:8px;">İşlemi Onaylayın</div>
+      <p id="confirmModalMessage" style="font-size:13px; color:var(--text-secondary); margin:8px 0 20px 0; line-height:1.5;"></p>
+      <div style="display:flex; justify-content:center; gap:12px;">
+        <button class="btn-secondary" id="confirmModalCancelBtn" style="padding:10px 20px; font-size:13px; min-width:100px;">Vazgeç</button>
+        <button class="btn-apple" id="confirmModalOkBtn" style="padding:10px 24px; font-size:13px; font-weight:600; min-width:120px;">Onayla</button>
       </div>
     </div>
   </div>

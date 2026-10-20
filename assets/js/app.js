@@ -4,6 +4,7 @@ const App = {
 
   init() {
     this.initTheme();
+    this.initNativeDesktopBehavior();
     Cart.init();
     this.initWebSocket();
     this.fetchStatus();
@@ -15,7 +16,7 @@ const App = {
 
     setInterval(() => this.fetchStatus(), 3000);
 
-    // Barcode scanner listener
+    // Barcode scanner listener on the input field
     const barcodeInput = document.getElementById('posBarcodeField');
     if (barcodeInput) {
       barcodeInput.addEventListener('keydown', (e) => {
@@ -27,15 +28,84 @@ const App = {
       });
     }
 
-    // Keyboard Shortcuts (F1-F12, Esc)
+    this.initGlobalScannerAndShortcuts();
+  },
+
+  initNativeDesktopBehavior() {
+    // 1. Native Right-Click Suppression (prevents browser context menus)
+    window.addEventListener('contextmenu', (e) => {
+      const tag = e.target.tagName ? e.target.tagName.toLowerCase() : '';
+      if (tag !== 'input' && tag !== 'textarea') {
+        e.preventDefault();
+      }
+    });
+
+    // 2. Prevent drag-and-drop of images and text
+    window.addEventListener('dragstart', (e) => e.preventDefault());
+
+    // 3. Prevent browser zoom shortcuts
+    window.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) e.preventDefault();
+    }, { passive: false });
+
+    // 4. Prevent browser reload shortcuts (F5, Ctrl+R, Cmd+R)
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'F2') { e.preventDefault(); this.openCashModal(); }
-      else if (e.key === 'F3') { e.preventDefault(); Terminal.checkoutCard(); }
-      else if (e.key === 'F4') { e.preventDefault(); this.openVeresiyeCustomerModal(); }
-      else if (e.key === 'F6') { e.preventDefault(); Cart.clear(); }
-      else if (e.key === 'F7') { e.preventDefault(); this.parkCurrentCart(); }
-      else if (e.key === 'Escape') {
+      if (e.key === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+        e.preventDefault();
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '0')) {
+        e.preventDefault();
+      }
+    });
+  },
+
+  initGlobalScannerAndShortcuts() {
+    let scanBuffer = '';
+    let lastKeyTime = 0;
+
+    window.addEventListener('keydown', (e) => {
+      const activeEl = document.activeElement;
+      const isInputFocused = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+
+      // Native Desktop Keyboard Shortcuts (F1-F12, Esc)
+      if (e.key === 'F1') {
+        e.preventDefault();
+        const b = document.getElementById('posBarcodeField');
+        if (b) { b.focus(); b.select(); }
+        return;
+      }
+      if (e.key === 'F2') { e.preventDefault(); this.openCashModal(); return; }
+      if (e.key === 'F3') { e.preventDefault(); Terminal.checkoutCard(); return; }
+      if (e.key === 'F4') { e.preventDefault(); this.openVeresiyeCustomerModal(); return; }
+      if (e.key === 'F6') { e.preventDefault(); Cart.clear(); return; }
+      if (e.key === 'F7') { e.preventDefault(); this.parkCurrentCart(); return; }
+      if (e.key === 'F8') { e.preventDefault(); Views.openNewCustomerModal(); return; }
+      if (e.key === 'F9') { e.preventDefault(); Views.openNewProductModal(); return; }
+      if (e.key === 'F10') { e.preventDefault(); this.triggerSyncNow(); return; }
+      if (e.key === 'F12') { e.preventDefault(); Views.printLastReceipt(); return; }
+      if (e.key === 'Escape') {
         document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        return;
+      }
+
+      // If an input is actively being edited, let user type freely
+      if (isInputFocused) return;
+
+      // Global Hardware Barcode Scanner auto-capture (Honeywell, Datalogic, Sunmi, Zebra, etc.)
+      const now = Date.now();
+      if (now - lastKeyTime > 150) {
+        scanBuffer = '';
+      }
+      lastKeyTime = now;
+
+      if (e.key === 'Enter') {
+        if (scanBuffer.length >= 3) {
+          e.preventDefault();
+          this.handleBarcodeScan(scanBuffer.trim());
+          scanBuffer = '';
+        }
+      } else if (e.key.length === 1) {
+        scanBuffer += e.key;
       }
     });
   },
@@ -333,6 +403,38 @@ const App = {
   closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
+  },
+
+  confirm(message, onConfirm, title = 'İşlemi Onaylayın', isDanger = false) {
+    const modal = document.getElementById('appConfirmModal');
+    const msgEl = document.getElementById('confirmModalMessage');
+    const titleEl = document.getElementById('confirmModalTitle');
+    const okBtn = document.getElementById('confirmModalOkBtn');
+    const cancelBtn = document.getElementById('confirmModalCancelBtn');
+    if (!modal) {
+      if (window.confirm(message)) onConfirm();
+      return;
+    }
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+    okBtn.className = isDanger ? 'btn-danger' : 'btn-apple';
+    okBtn.innerText = isDanger ? 'Evet, Onayla' : 'Onayla';
+    
+    modal.style.display = 'flex';
+    
+    const cleanup = () => {
+      modal.style.display = 'none';
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+    };
+    
+    okBtn.onclick = () => {
+      cleanup();
+      if (typeof onConfirm === 'function') onConfirm();
+    };
+    cancelBtn.onclick = () => {
+      cleanup();
+    };
   },
 
   showToast(msg, isError = false) {

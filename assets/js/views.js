@@ -29,11 +29,16 @@ const Views = {
     list.forEach(s => {
       const tr = document.createElement('tr');
       const itemCount = s.items ? s.items.reduce((acc, i) => acc + i.quantity, 0) : 0;
-      const methodBadge = s.payment_method === 'CASH'
-        ? '<span style="color:var(--apple-green); font-weight:700;">Nakit</span>'
-        : (s.payment_method === 'CREDIT_CARD'
-           ? '<span style="color:var(--apple-blue); font-weight:700;">Kredi Kartı</span>'
-           : '<span style="color:var(--apple-amber); font-weight:700;">Veresiye</span>');
+      let methodBadge = '';
+      if (s.payment_method === 'CASH') {
+        methodBadge = '<span style="color:var(--apple-green); font-weight:700;">Nakit</span>';
+      } else if (s.payment_method === 'CREDIT_CARD') {
+        methodBadge = '<span style="color:var(--apple-blue); font-weight:700;">Kredi Kartı</span>';
+      } else if (s.payment_method === 'SPLIT') {
+        methodBadge = '<span style="color:var(--system-purple, #af52de); font-weight:700;">Parçalı (Nakit+Kart)</span>';
+      } else {
+        methodBadge = '<span style="color:var(--apple-amber); font-weight:700;">Veresiye</span>';
+      }
 
       tr.innerHTML = `
         <td><span style="font-family:monospace; font-weight:700; color:#38bdf8;">${s.receipt_no}</span></td>
@@ -158,35 +163,132 @@ const Views = {
     }
   },
 
-  // 2. Product Management (CRUD)
+  // 2. Product Management (CRUD & Edit)
   async loadProducts() {
     try {
       this.products = await Api.getProducts();
-      const tbody = document.getElementById('productsTableBody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      this.products.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="font-family:monospace; font-weight:600;">${p.barcode}</td>
-          <td style="font-weight:600;">${p.name}</td>
-          <td><span class="badge-unit">${p.category}</span></td>
-          <td>${p.unit}</td>
-          <td style="font-weight:700; color:#38bdf8;">${p.price.toFixed(2)} ₺</td>
-          <td>%${p.vat_rate.toFixed(0)}</td>
-          <td style="font-weight:600;">${p.stock_qty.toFixed(1)}</td>
-          <td>${p.is_weighed ? 'Terazi / Tartılı' : 'Adetli'}</td>
-          <td style="text-align:right;">
-            <button class="btn-top-action" style="display:inline-flex; color:var(--apple-red);" onclick="Views.deleteProduct('${p.id}')">Sil</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } catch (e) {}
+      this.populateProductCategories();
+      this.renderProducts(this.products);
+    } catch (e) {
+      console.warn('Ürünler yüklenemedi:', e);
+    }
+  },
+
+  populateProductCategories() {
+    const sel = document.getElementById('productsCategoryFilter');
+    if (!sel || !this.products) return;
+    const currentVal = sel.value;
+    const cats = [...new Set(this.products.map(p => p.category).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Tüm Kategoriler</option>';
+    cats.forEach(c => {
+      sel.innerHTML += `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`;
+    });
+  },
+
+  renderProducts(list) {
+    const tbody = document.getElementById('productsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const countBadge = document.getElementById('productsCountBadge');
+    if (countBadge) {
+      countBadge.textContent = `${list.length} Ürün Listelendi`;
+    }
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:var(--text-secondary);">Kriterlere uygun ürün bulunamadı.</td></tr>`;
+      return;
+    }
+
+    list.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-family:monospace; font-weight:600;">${p.barcode}</td>
+        <td style="font-weight:600;">${p.name}</td>
+        <td><span class="badge-unit">${p.category}</span></td>
+        <td>${p.unit}</td>
+        <td style="font-weight:700; color:var(--apple-blue);">${p.price.toFixed(2)} ₺</td>
+        <td>%${p.vat_rate.toFixed(0)}</td>
+        <td style="font-weight:600;">${p.stock_qty.toFixed(1)}</td>
+        <td>${p.is_weighed ? '<span style="color:var(--apple-amber); font-weight:600;">Terazi / Tartılı</span>' : 'Adetli'}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button class="btn-top-action" onclick="Views.openEditProductModal('${p.id}')">Düzenle</button>
+          <button class="btn-top-action" style="color:var(--apple-red); margin-left:4px;" onclick="Views.deleteProduct('${p.id}')">Sil</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  },
+
+  filterProducts() {
+    const q = (document.getElementById('productsSearch')?.value || '').toLowerCase().trim();
+    const cat = document.getElementById('productsCategoryFilter')?.value || '';
+
+    const filtered = (this.products || []).filter(p => {
+      const matchQ = !q || p.name.toLowerCase().includes(q) || p.barcode.toLowerCase().includes(q);
+      const matchCat = !cat || p.category === cat;
+      return matchQ && matchCat;
+    });
+
+    this.renderProducts(filtered);
   },
 
   openNewProductModal() {
     App.openModal('newProductModal');
+  },
+
+  openEditProductModal(productId) {
+    const p = (this.products || []).find(item => item.id === productId);
+    if (!p) return;
+
+    document.getElementById('epId').value = p.id;
+    document.getElementById('epBarcode').value = p.barcode;
+    document.getElementById('epName').value = p.name;
+    document.getElementById('epCategory').value = p.category;
+    document.getElementById('epUnit').value = p.unit;
+    document.getElementById('epPrice').value = p.price;
+    document.getElementById('epVat').value = p.vat_rate.toString();
+    document.getElementById('epStock').value = p.stock_qty;
+
+    App.openModal('editProductModal');
+  },
+
+  async saveEditProduct() {
+    const id = document.getElementById('epId').value;
+    const barcode = document.getElementById('epBarcode').value.trim();
+    const name = document.getElementById('epName').value.trim();
+    const category = document.getElementById('epCategory').value.trim() || 'Genel';
+    const unit = document.getElementById('epUnit').value;
+    const price = parseFloat(document.getElementById('epPrice').value) || 0;
+    const vat_rate = parseFloat(document.getElementById('epVat').value) || 10.0;
+    const stock_qty = parseFloat(document.getElementById('epStock').value) || 0;
+    const is_weighed = unit === 'kg';
+
+    if (!name || price <= 0) {
+      App.showToast('Lütfen geçerli ürün adı ve fiyat giriniz!', true);
+      return;
+    }
+
+    try {
+      await Api.updateProduct(id, {
+        barcode,
+        name,
+        category,
+        price,
+        vat_rate,
+        stock_qty,
+        unit,
+        is_weighed,
+        quick_order: null
+      });
+
+      App.closeModal('editProductModal');
+      App.showToast(`Ürün güncellendi: ${name}`);
+      this.loadProducts();
+      App.loadCatalog();
+    } catch (e) {
+      App.showToast(`Ürün güncellenemedi: ${e.message}`, true);
+    }
   },
 
   async saveNewProduct() {
@@ -200,7 +302,7 @@ const Views = {
     const is_weighed = unit === 'kg';
 
     if (!barcode || !name || price <= 0) {
-      alert('Lütfen barkod, ürün adı ve geçerli bir fiyat girin.');
+      App.showToast('Lütfen barkod, ürün adı ve geçerli fiyat giriniz!', true);
       return;
     }
 
@@ -211,41 +313,121 @@ const Views = {
       this.loadProducts();
       App.loadCatalog();
     } catch (e) {
-      App.showToast('Ürün eklenemedi', true);
+      App.showToast('Ürün eklenemedi: ' + e.message, true);
     }
   },
 
   async deleteProduct(id) {
-    if (!confirm('Bu ürünü silmek istediğinize emin misiniz?')) return;
     try {
       await Api.deleteProduct(id);
+      App.showToast('Ürün silindi');
       this.loadProducts();
       App.loadCatalog();
-    } catch (e) {}
+    } catch (e) {
+      App.showToast('Ürün silinemedi: ' + e.message, true);
+    }
   },
 
   // 3. Customers & Veresiye Ledger
   async loadCustomers() {
     try {
       this.customers = await Api.getCustomers();
-      const tbody = document.getElementById('customersTableBody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      this.customers.forEach(c => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="font-weight:700;">${c.name}</td>
-          <td>${c.phone}</td>
-          <td style="font-weight:700; color:var(--apple-amber);">${c.balance.toFixed(2)} ₺</td>
-          <td>${c.credit_limit.toFixed(2)} ₺</td>
-          <td style="color:var(--text-muted);">${c.note || '-'}</td>
-          <td style="text-align:right;">
-            <button class="btn-top-action" style="display:inline-flex; background:var(--apple-green);" onclick="Views.openPaymentModal('${c.id}', '${c.name}')">Tahsilat Yap</button>
-          </td>
+      this.renderCustomers(this.customers);
+    } catch (e) {
+      console.warn('Müşteriler alınamadı:', e);
+    }
+  },
+
+  renderCustomers(list) {
+    const tbody = document.getElementById('customersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const totalDebt = (this.customers || []).reduce((acc, c) => acc + (c.balance || 0), 0);
+    const debtBadge = document.getElementById('customersTotalDebtBadge');
+    if (debtBadge) {
+      debtBadge.textContent = `Toplam Veresiye Alacak: ${totalDebt.toFixed(2)} ₺`;
+    }
+
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-secondary);">Kayıtlı veresiye müşterisi bulunamadı.</td></tr>`;
+      return;
+    }
+
+    list.forEach(c => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:700;">${c.name}</td>
+        <td>${c.phone}</td>
+        <td style="font-weight:700; color:var(--apple-amber);">${c.balance.toFixed(2)} ₺</td>
+        <td>${c.credit_limit.toFixed(2)} ₺</td>
+        <td style="color:var(--text-secondary); font-size:12px;">${c.note || '-'}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button class="btn-top-action" style="background:var(--apple-green); color:#fff;" onclick="Views.openPaymentModal('${c.id}', '${c.name}')">Tahsilat</button>
+          <button class="btn-top-action" style="margin-left:4px;" onclick="Views.viewCustomerLedger('${c.id}', '${c.name}')">Ekstre</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  },
+
+  filterCustomers() {
+    const q = (document.getElementById('customersSearch')?.value || '').toLowerCase().trim();
+    const filtered = (this.customers || []).filter(c => {
+      return !q || c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q) || (c.note && c.note.toLowerCase().includes(q));
+    });
+    this.renderCustomers(filtered);
+  },
+
+  async viewCustomerLedger(cid, cname) {
+    const heading = document.getElementById('customerLedgerHeading');
+    if (heading) heading.textContent = `${cname} - Cari Hareket Ekstresi`;
+
+    const summary = document.getElementById('customerLedgerSummary');
+    const tbody = document.getElementById('customerLedgerBody');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px;">Yükleniyor...</td></tr>';
+
+    App.openModal('customerLedgerModal');
+
+    try {
+      const entries = await Api.getCustomerLedger(cid);
+      const customer = (this.customers || []).find(c => c.id === cid);
+
+      if (summary && customer) {
+        summary.innerHTML = `
+          <span>Müşteri: <b>${customer.name}</b></span>
+          <span>Telefon: <b>${customer.phone}</b></span>
+          <span style="color:var(--apple-amber);">Güncel Borç: <b>${customer.balance.toFixed(2)} ₺</b></span>
         `;
-        tbody.appendChild(tr);
-      });
-    } catch (e) {}
+      }
+
+      if (tbody) {
+        tbody.innerHTML = '';
+        if (!entries || entries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-secondary);">Henüz bir cari hareket bulunamadı.</td></tr>';
+          return;
+        }
+
+        entries.forEach(e => {
+          const isPayment = e.entry_type === 'PAYMENT';
+          const typeBadge = isPayment
+            ? '<span style="color:var(--apple-green); font-weight:700;">Tahsilat (Ödeme)</span>'
+            : '<span style="color:var(--apple-amber); font-weight:700;">Veresiye Satış</span>';
+
+          tbody.innerHTML += `
+            <tr>
+              <td style="color:var(--text-secondary); font-size:12px;">${new Date(e.created_at).toLocaleString('tr-TR')}</td>
+              <td>${typeBadge}</td>
+              <td style="font-weight:700; color:${isPayment ? 'var(--apple-green)' : 'var(--apple-amber)'};">${isPayment ? '-' : '+'}${e.amount.toFixed(2)} ₺</td>
+              <td><b>${e.balance_after.toFixed(2)} ₺</b></td>
+              <td style="font-size:12px; color:var(--text-secondary);">${e.note || '-'}</td>
+            </tr>
+          `;
+        });
+      }
+    } catch (e) {
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--apple-red); padding:18px;">Ekstre yüklenemedi: ${e.message}</td></tr>`;
+    }
   },
 
   openNewCustomerModal() {
@@ -253,23 +435,24 @@ const Views = {
   },
 
   async saveNewCustomer() {
-    const _cNameEl = document.getElementById('ncCampaignName') || document.getElementById('ncName'); const name = _cNameEl ? _cNameEl.value.trim() : '';
-    const phone = document.getElementById('ncPhone').value.trim();
-    const credit_limit = parseFloat(document.getElementById('ncLimit').value) || 2000.0;
-    const note = document.getElementById('ncNote').value.trim();
+    const nameEl = document.getElementById('ncName');
+    const name = nameEl ? nameEl.value.trim() : '';
+    const phone = (document.getElementById('ncPhone')?.value || '').trim();
+    const credit_limit = parseFloat(document.getElementById('ncLimit')?.value) || 2000.0;
+    const note = (document.getElementById('ncNote')?.value || '').trim();
 
     if (!name || !phone) {
-      alert('Lütfen ad soyad ve telefon girin.');
+      App.showToast('Lütfen müşteri ad soyad ve telefon giriniz!', true);
       return;
     }
 
     try {
       await Api.createCustomer({ name, phone, credit_limit, note: note || null });
       App.closeModal('newCustomerModal');
-      App.showToast('Cari müşteri kaydedildi');
+      App.showToast(`Cari müşteri kaydedildi: ${name}`);
       this.loadCustomers();
     } catch (e) {
-      App.showToast('Müşteri kaydedilemedi', true);
+      App.showToast('Müşteri kaydedilemedi: ' + e.message, true);
     }
   },
 
@@ -284,15 +467,18 @@ const Views = {
     const amount = parseFloat(document.getElementById('payModalAmount').value) || 0;
     const note = document.getElementById('payModalNote').value.trim();
 
-    if (amount <= 0) { alert('Lütfen geçerli bir ödeme tutarı girin.'); return; }
+    if (amount <= 0) {
+      App.showToast('Lütfen geçerli bir tahsilat tutarı giriniz!', true);
+      return;
+    }
 
     try {
       await Api.recordPayment({ customer_id: this.selectedCustomerIdForPayment, amount, note });
       App.closeModal('paymentModal');
-      App.showToast('Tahsilat kaydedildi ve makbuz basıldı');
+      App.showToast(`Tahsilat başarıyla işlendi (${amount.toFixed(2)} ₺)`);
       this.loadCustomers();
     } catch (e) {
-      App.showToast('Tahsilat kaydedilemedi', true);
+      App.showToast('Tahsilat kaydedilemedi: ' + e.message, true);
     }
   },
 
@@ -402,17 +588,20 @@ const Views = {
       document.getElementById('stockScanField').focus();
       this.loadStockItemsList(sessionId);
     } catch (e) {
-      alert('Barkod bulunamadı!');
+      App.showToast('Barkod bulunamadı!', true);
     }
   },
 
   async commitStockSession(sessionId) {
-    if (!confirm('Sayımı onaylamak ve ürün stoklarını bu miktarlarla güncellemek istediğinize emin misiniz?')) return;
-    try {
-      await Api.commitStockSession(sessionId);
-      App.showToast('Stoklar başarıyla güncellendi');
-      this.loadStockSessions();
-    } catch (e) {}
+    App.confirm('Sayımı onaylamak ve ürün stoklarını bu miktarlarla güncellemek istediğinize emin misiniz?', async () => {
+      try {
+        await Api.commitStockSession(sessionId);
+        App.showToast('Stoklar başarıyla güncellendi');
+        this.loadStockSessions();
+      } catch (e) {
+        App.showToast('Stok güncellemesi başarısız: ' + e.message, true);
+      }
+    }, 'Sayımı Tamamla');
   },
 
   // 5. Waste / Fire Tracking
@@ -682,12 +871,13 @@ const Views = {
 
     list.forEach(r => {
       const tr = document.createElement('tr');
+      const totalCost = typeof r.total_amount === 'number' ? r.total_amount : (typeof r.grand_total === 'number' ? r.grand_total : 0);
       tr.innerHTML = `
         <td><span style="font-family:monospace; font-weight:700; color:var(--apple-blue);">${r.invoice_no}</span></td>
         <td style="color:var(--text-muted);">${new Date(r.created_at).toLocaleString('tr-TR')}</td>
         <td><b>${r.supplier_name}</b></td>
         <td>${r.items ? r.items.length : 0} Kalem</td>
-        <td><b style="color:var(--apple-green);">${r.grand_total.toFixed(2)} ₺</b></td>
+        <td><b style="color:var(--apple-green);">${totalCost.toFixed(2)} ₺</b></td>
         <td style="font-size:12px; color:var(--text-muted);">${r.notes || '-'}</td>
         <td style="text-align:right;">
           <button class="btn-top-action" onclick="Views.viewGoodsReceiptDetail('${r.id}')">Fiş Detayı</button>
@@ -717,7 +907,7 @@ const Views = {
     }
 
     try {
-      await Api.createSupplier({ name, contact_person: contact || null, phone: phone || null, tax_info: tax_info || null });
+      await Api.createSupplier({ name, contact_name: contact || null, phone: phone || null, address: tax_info || null });
       App.showToast(`Tedarikçi kaydedildi: ${name}`);
       App.closeModal('newSupplierModal');
       this.loadReceiving();
@@ -1031,14 +1221,15 @@ const Views = {
   },
 
   async deleteCampaign(id) {
-    if (!confirm('Bu kampanyayı silmek istediğinizden emin misiniz?')) return;
-    try {
-      await Api.deleteCampaign(id);
-      App.showToast('Kampanya silindi');
-      this.loadCampaigns();
-    } catch (e) {
-      App.showToast('Kampanya silinemedi', true);
-    }
+    App.confirm('Bu kampanyayı silmek istediğinizden emin misiniz?', async () => {
+      try {
+        await Api.deleteCampaign(id);
+        App.showToast('Kampanya silindi');
+        this.loadCampaigns();
+      } catch (e) {
+        App.showToast('Kampanya silinemedi', true);
+      }
+    }, 'Kampanya Sil', true);
   },
 
   async applyCampaignCode() {
@@ -1218,15 +1409,16 @@ const Views = {
   },
 
   async receiveTransfer(id) {
-    if (!confirm('Bu transferdeki ürünleri şube stoğunuza kabul etmek istiyor musunuz?')) return;
-    try {
-      await Api.receiveTransfer(id);
-      App.showToast('Mallar teslim alındı ve stoğa eklendi.');
-      this.loadTransfers();
-      this.loadProducts();
-    } catch (e) {
-      App.showToast('Teslim alınamadı: ' + e.message, true);
-    }
+    App.confirm('Bu transferdeki ürünleri şube stoğunuza kabul etmek istiyor musunuz?', async () => {
+      try {
+        await Api.receiveTransfer(id);
+        App.showToast('Mallar teslim alındı ve stoğa eklendi.');
+        this.loadTransfers();
+        this.loadProducts();
+      } catch (e) {
+        App.showToast('Teslim alınamadı: ' + e.message, true);
+      }
+    }, 'Transfer Kabul Onayı');
   },
 
   // ==========================================================
@@ -1540,6 +1732,25 @@ const Views = {
       }
     } catch (e) {
       if (badge) badge.style.display = 'none';
+    }
+  },
+
+  // Donanım Kısayolları (F12 Yazıcı, Çekmece)
+  async printLastReceipt() {
+    try {
+      await Api.printReceipt('SON_ISLEM');
+      App.showToast('Son satış fişi yazıcıya iletildi (F12)');
+    } catch (e) {
+      App.showToast('Yazıcı komutu iletilemedi: ' + e.message, true);
+    }
+  },
+
+  async kickDrawer() {
+    try {
+      await Api.kickDrawer();
+      App.showToast('Kasa çekmecesi açıldı');
+    } catch (e) {
+      App.showToast('Kasa çekmecesi tetiklenemedi: ' + e.message, true);
     }
   }
 };
