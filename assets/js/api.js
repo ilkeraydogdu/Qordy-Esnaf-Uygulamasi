@@ -1,7 +1,17 @@
 // QORDY POS - Unified Local API Client
 const Api = {
+  getHeaders() {
+    const token = localStorage.getItem('qordy_pos_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+      headers['X-Session-Token'] = token;
+    }
+    return headers;
+  },
+
   async get(url) {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: Api.getHeaders() });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
@@ -9,7 +19,7 @@ const Api = {
   async post(url, data) {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Api.getHeaders(),
       body: JSON.stringify(data)
     });
     if (!res.ok) throw new Error(await res.text());
@@ -17,7 +27,7 @@ const Api = {
   },
 
   async delete(url) {
-    const res = await fetch(url, { method: 'DELETE' });
+    const res = await fetch(url, { method: 'DELETE', headers: Api.getHeaders() });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },

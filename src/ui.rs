@@ -29,6 +29,7 @@ pub fn get_static_asset(path: &str) -> Option<(&'static str, &'static str)> {
         "/assets/js/terminal.js" => Some((include_str!("../assets/js/terminal.js"), "application/javascript; charset=utf-8")),
         "/assets/js/views.js" => Some((include_str!("../assets/js/views.js"), "application/javascript; charset=utf-8")),
         "/assets/js/app.js" => Some((include_str!("../assets/js/app.js"), "application/javascript; charset=utf-8")),
+        "/assets/js/auth.js" => Some((include_str!("../assets/js/auth.js"), "application/javascript; charset=utf-8")),
         "/assets/js/customer.js" => Some((include_str!("../assets/js/customer.js"), "application/javascript; charset=utf-8")),
         "/assets/images/pofuduk-logo.svg" => Some((include_str!("../assets/images/pofuduk-logo.svg"), "image/svg+xml; charset=utf-8")),
         _ => None,

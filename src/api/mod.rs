@@ -1,6 +1,7 @@
 //! QORDY POS - Modular API Layer
 //! Decoupled enterprise REST & WebSocket routing architecture.
 
+pub mod auth;
 pub mod campaigns;
 pub mod cash;
 pub mod catalog;
@@ -48,6 +49,13 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route("/", get(static_files::handle_index))
         .route("/customer", get(static_files::handle_customer_display))
         .route("/assets/*path", get(static_files::handle_static_asset))
+        // Enterprise Authentication & Session Management
+        .route("/api/auth/users", get(auth::handle_get_users))
+        .route("/api/auth/login", post(auth::handle_login))
+        .route("/api/auth/session", get(auth::handle_validate_session))
+        .route("/api/auth/lock", post(auth::handle_lock_session))
+        .route("/api/auth/unlock", post(auth::handle_unlock_session))
+        .route("/api/auth/logout", post(auth::handle_logout))
         // WebSocket Realtime Channel
         .route("/ws/pos", get(cfd::handle_ws_pos))
         // POS Core & Catalog

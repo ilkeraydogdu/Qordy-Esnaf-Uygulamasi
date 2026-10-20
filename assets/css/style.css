@@ -1194,3 +1194,335 @@ body.dark-theme .product-tile:hover, body.dark-theme .pos-tile:hover {
   from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
   to { transform: translateX(-50%) translateY(0); opacity: 1; }
 }
+
+/* ==========================================================================
+   ENTERPRISE AUTH & LOCK SCREEN (Apple HIG macOS Native)
+   ========================================================================== */
+
+.sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+
+.user-avatar-initial {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--apple-blue), var(--system-indigo));
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.user-info-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--apple-blue);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-user-action {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+
+.btn-user-action:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+  transform: translateY(-1px);
+}
+
+/* Fullscreen Lock Screen */
+.auth-lock-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(15, 23, 42, 0.82);
+  padding: 20px;
+}
+
+.auth-lock-overlay.active {
+  display: flex;
+  animation: authFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes authFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  padding: 36px 32px 30px 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand-crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.auth-brand-logo {
+  height: 40px;
+  max-width: 140px;
+  object-fit: contain;
+}
+
+.auth-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+}
+
+/* Cashier Avatars Picker */
+.auth-cashiers-grid {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding: 4px;
+}
+
+.auth-avatar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  background: var(--bg-subtle);
+}
+
+.auth-avatar-card:hover {
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+}
+
+.auth-avatar-card.selected {
+  border-color: var(--apple-blue);
+  background: rgba(0, 122, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+}
+
+.auth-avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.auth-avatar-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.auth-avatar-role {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+/* PIN Indicator Dots */
+.auth-pin-dots-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 16px 0 24px 0;
+}
+
+.auth-pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--card-border);
+  background: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-pin-dot.filled {
+  background: var(--apple-blue);
+  border-color: var(--apple-blue);
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
+}
+
+/* PIN Numpad Grid */
+.auth-numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 270px;
+  margin: 0 auto 16px auto;
+}
+
+.auth-numpad-btn {
+  width: 72px;
+  height: 60px;
+  border-radius: 18px;
+  border: 1px solid var(--card-border);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  user-select: none;
+  margin: 0 auto;
+}
+
+.auth-numpad-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-tertiary);
+  transform: translateY(-2px);
+}
+
+.auth-numpad-btn:active {
+  transform: scale(0.92);
+  background: var(--apple-blue);
+  color: #fff;
+}
+
+.auth-numpad-btn .btn-sub {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+.auth-numpad-btn:active .btn-sub {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-numpad-btn.btn-action {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Error message & Shake */
+.auth-error-msg {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  min-height: 18px;
+  display: none;
+}
+
+.shake {
+  animation: shakeKeyframes 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shakeKeyframes {
+  10%, 90% { transform: translate3d(-2px, 0, 0); }
+  20%, 80% { transform: translate3d(3px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-5px, 0, 0); }
+  40%, 60% { transform: translate3d(5px, 0, 0); }
+}
+
+.auth-bottom-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.auth-text-link {
+  color: var(--apple-blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.auth-text-link:hover {
+  opacity: 0.8;
+}

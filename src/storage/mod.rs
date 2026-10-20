@@ -1,6 +1,7 @@
 //! QORDY POS - Enterprise SQLite Storage Architecture
 //! WAL-mode, offline-first transactional storage engine with outbox pattern.
 
+pub mod auth;
 pub mod campaigns;
 pub mod cash;
 pub mod catalog;
@@ -514,6 +515,39 @@ impl DatabaseManager {
                 suggested_price REAL
             );
             CREATE INDEX IF NOT EXISTS idx_national_name ON national_catalog_cache(name);
+
+            -- Güvenli Kullanıcılar ve Kasiyerler
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                tenant_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                username TEXT NOT NULL UNIQUE,
+                pin_hash TEXT NOT NULL,
+                pin_salt TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                password_salt TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'CASHIER',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                failed_attempts INTEGER NOT NULL DEFAULT 0,
+                locked_until TEXT,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+
+            -- Kalıcı Desktop Oturumları
+            CREATE TABLE IF NOT EXISTS sessions (
+                token TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                is_locked INTEGER NOT NULL DEFAULT 0,
+                device_info TEXT NOT NULL DEFAULT 'desktop_pos',
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+            CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
             ",
         )?;
 
@@ -521,6 +555,9 @@ impl DatabaseManager {
     }
 
     fn seed_initial_data_if_empty(&self) -> Result<()> {
+        // Güvenli kullanıcıları daima kontrol et ve yoksa oluştur
+        self.seed_default_users()?;
+
         let conn = self.conn.lock();
 
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM products", [], |r| r.get(0))?;

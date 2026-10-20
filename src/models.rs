@@ -498,3 +498,52 @@ pub struct NationalProductInfo {
     pub source: String, // "NATIONAL_CATALOG_4.13M"
 }
 
+// -------------------------------------------------------------
+// 6. Kimlik Doğrulama & Güvenlik (Auth & Sessions)
+// -------------------------------------------------------------
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
+    pub id: String,
+    pub tenant_id: String,
+    pub name: String,
+    pub username: String,
+    pub role: String, // "CASHIER", "MANAGER", "ADMIN"
+    pub is_active: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Session {
+    pub token: String,
+    pub user_id: String,
+    pub user_name: String,
+    pub role: String,
+    pub created_at: String,
+    pub expires_at: String,
+    pub is_locked: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub pin: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub remember_me: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UnlockRequest {
+    pub token: String,
+    pub pin: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthResponse {
+    pub success: bool,
+    pub token: Option<String>,
+    pub user: Option<User>,
+    pub is_locked: bool,
+    pub error: Option<String>,
+}
+
+
